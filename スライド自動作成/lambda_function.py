@@ -34,17 +34,34 @@ s3_client = boto3.client('s3')
 # この`CONFIG`辞書は、生成されるPowerPointスライド全体のデザインを定義する「設計図」です。
 # 色、フォントサイズ、ロゴのURL、各要素の配置場所など、見た目に関するすべての設定がここに集約されています。
 #
-# 利点:
-# - デザインの統一: 全てのスライドで一貫したデザインを保つことができます。
-# - メンテナンス性の向上: デザインを変更したい場合、この`CONFIG`部分を修正するだけで、
-#   すべてのスライドに一括で変更を適用できます。コードの他の部分を触る必要はありません。
+# ★★★ AWS Lambda 環境変数による設定 ★★★
+# 以下の項目は、Lambdaの「環境変数」に設定することで、コードをデプロイし直さずに
+# デザインの一部を動的に変更できます。設定し忘れないように注意してください。
 #
-# カスタマイズする際の注意点:
-# - `POS_PX`内の座標は、幅960px、高さ540pxのスライドを基準にしています。
-#   この基準サイズに合わせて座標を調整してください。
-# - 色は16進数のカラーコード（例: '4285F4'）で指定します。
-# - `LOGOS`のURLは、インターネット上から直接アクセスできる画像を指定してください。
+# - LOGO_HEADER_URL: ヘッダーや表紙に表示するロゴ画像のURL
+# - LOGO_CLOSING_URL: 結びのスライドに表示するロゴ画像のURL
+# - FOOTER_ORGANIZATION_NAME: フッターに表示する組織名
+# - DEFAULT_FONT_FAMILY: スライド全体で使用する基本フォント名 (例: 'Meiryo UI')
+# - THEME_COLOR_PRIMARY: スライドのテーマカラーとなるアクセントカラー (16進数カラーコード)
+#
+# 環境変数が設定されていない場合は、下のコードに記述されているデフォルト値が使用されます。
 # ==============================================================================
+
+# Lambdaの環境変数から設定を読み込みます。
+# os.environ.get('環境変数名', 'デフォルト値') を使うことで、環境変数が設定されていない場合でも
+# エラーにならず、デフォルト値が使われるため安全です。
+logo_header_url = os.environ.get(
+    'LOGO_HEADER_URL',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
+)
+logo_closing_url = os.environ.get(
+    'LOGO_CLOSING_URL',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
+)
+footer_org_name = os.environ.get('FOOTER_ORGANIZATION_NAME', 'Your Organization')
+default_font = os.environ.get('DEFAULT_FONT_FAMILY', 'Arial')
+primary_color = os.environ.get('THEME_COLOR_PRIMARY', '4285F4')
+
 CONFIG = {
     # --- スライドの基本サイズ定義 ---
     # `BASE_PX`: デザインの基準となるピクセル単位のサイズ。Webデザインのように直感的に指定できます。
@@ -88,7 +105,7 @@ CONFIG = {
 
     # --- フォント設定 ---
     'FONTS': {
-        'family': 'Arial', # 基本となるフォントファミリー
+        'family': default_font, # 基本となるフォントファミリー (環境変数で変更可能)
         'sizes': { # 各要素ごとのフォントサイズ (ポイント単位)
             'title': 45, 'date': 16, 'sectionTitle': 38, 'contentTitle': 28,
             'subhead': 18, 'body': 14, 'footer': 9, 'cardTitle': 16,
@@ -100,7 +117,8 @@ CONFIG = {
     # --- カラーパレット設定 ---
     # デザインで使用する色を名前付きで定義します。
     'COLORS': {
-        'primary_blue': '4285F4', 'google_red': 'EA4335', 'google_yellow': 'FBBC04',
+        'primary_blue': primary_color, # テーマカラー (環境変数で変更可能)
+        'google_red': 'EA4335', 'google_yellow': 'FBBC04',
         'google_green': '34A853', 'text_primary': '333333', 'text_white': 'FFFFFF',
         'background_white': 'FFFFFF', 'background_gray': 'F8F9FA', 'card_bg': 'FFFFFF',
         'card_border': 'DADCE0', 'ghost_gray': 'EFEFED', 'faint_gray': 'E8EAED',
@@ -108,15 +126,15 @@ CONFIG = {
     },
 
     # --- ロゴ画像の設定 ---
-    # ヘッダー用と結びのスライド用のロゴ画像のURLを指定します。
+    # ヘッダー用と結びのスライド用のロゴ画像のURLを指定します (環境変数で変更可能)。
     'LOGOS': {
-        'header': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png',
-        'closing': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
+        'header': logo_header_url,
+        'closing': logo_closing_url
     },
 
     # --- フッターテキストの設定 ---
-    # f-stringを使って現在の年を自動的に埋め込んでいます。
-    'FOOTER_TEXT': f"© {date.today().year} Your Organization"
+    # f-stringを使って現在の年と、環境変数で指定された組織名を自動的に埋め込んでいます。
+    'FOOTER_TEXT': f"© {date.today().year} {footer_org_name}"
 }
 
 # ==============================================================================

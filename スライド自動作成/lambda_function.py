@@ -30,46 +30,75 @@ s3_client = boto3.client('s3')
 
 # ==============================================================================
 # 1. マスターデザイン設定 (固定テンプレート部分)
-# このセクションはプロンプトVer. 2.0に基づいています
+#
+# この`CONFIG`辞書は、生成されるPowerPointスライド全体のデザインを定義する「設計図」です。
+# 色、フォントサイズ、ロゴのURL、各要素の配置場所など、見た目に関するすべての設定がここに集約されています。
+#
+# 利点:
+# - デザインの統一: 全てのスライドで一貫したデザインを保つことができます。
+# - メンテナンス性の向上: デザインを変更したい場合、この`CONFIG`部分を修正するだけで、
+#   すべてのスライドに一括で変更を適用できます。コードの他の部分を触る必要はありません。
+#
+# カスタマイズする際の注意点:
+# - `POS_PX`内の座標は、幅960px、高さ540pxのスライドを基準にしています。
+#   この基準サイズに合わせて座標を調整してください。
+# - 色は16進数のカラーコード（例: '4285F4'）で指定します。
+# - `LOGOS`のURLは、インターネット上から直接アクセスできる画像を指定してください。
 # ==============================================================================
 CONFIG = {
+    # --- スライドの基本サイズ定義 ---
+    # `BASE_PX`: デザインの基準となるピクセル単位のサイズ。Webデザインのように直感的に指定できます。
     'BASE_PX': {'W': 960, 'H': 540},
+    # `BASE_EMU`: PowerPoint内部で使われる単位(EMU)でのサイズ。`Inches`を使ってインチから変換しています。
     'BASE_EMU': {'W': Inches(10).emu, 'H': Inches(5.625).emu},
+
+    # --- 各要素の配置とサイズ定義 (ピクセル単位) ---
+    # ここで定義したピクセル値は、`LayoutManager`クラスによって自動的にEMU単位に変換されます。
     'POS_PX': {
+        # 'titleSlide': 表紙スライドの要素定義
         'titleSlide': {
-            'logo':      {'left': 55,  'top': 105, 'width': 135},
-            'title':     {'left': 50,  'top': 230, 'width': 800, 'height': 90},
-            'date':      {'left': 50,  'top': 340, 'width': 250, 'height': 40},
+            'logo':      {'left': 55,  'top': 105, 'width': 135}, # ロゴの位置と幅
+            'title':     {'left': 50,  'top': 230, 'width': 800, 'height': 90}, # メインタイトルの位置とサイズ
+            'date':      {'left': 50,  'top': 340, 'width': 250, 'height': 40}, # 日付の位置とサイズ
         },
+        # 'contentSlide': 本文スライドの共通要素定義
         'contentSlide': {
-            'headerLogo':    {'right': 20, 'top': 20, 'width': 75},
-            'title':         {'left': 25, 'top': 60,  'width': 830, 'height': 65},
-            'titleUnderline':{'left': 25, 'top': 128, 'width': 260, 'height': 4},
-            'subhead':       {'left': 25, 'top': 140, 'width': 830, 'height': 30},
-            'body':          {'left': 25, 'top': 172, 'width': 910, 'height': 303},
-            'gridArea':      {'left': 25, 'top': 172, 'width': 910, 'height': 303},
-            'compareLeft':   {'left': 25, 'top': 172, 'width': 430, 'height': 303},
-            'compareRight':  {'left': 505, 'top': 172, 'width': 430, 'height': 303},
+            'headerLogo':    {'right': 20, 'top': 20, 'width': 75}, # ヘッダーロゴ (右からの距離で指定)
+            'title':         {'left': 25, 'top': 60,  'width': 830, 'height': 65}, # 各スライドのタイトル
+            'titleUnderline':{'left': 25, 'top': 128, 'width': 260, 'height': 4}, # タイトルの下線
+            'subhead':       {'left': 25, 'top': 140, 'width': 830, 'height': 30}, # サブヘッド（小見出し）
+            'body':          {'left': 25, 'top': 172, 'width': 910, 'height': 303}, # 本文全体のエリア
+            'gridArea':      {'left': 25, 'top': 172, 'width': 910, 'height': 303}, # カードなどを配置するグリッドエリア
+            'compareLeft':   {'left': 25, 'top': 172, 'width': 430, 'height': 303}, # 比較スライドの左側ボックス
+            'compareRight':  {'left': 505, 'top': 172, 'width': 430, 'height': 303}, # 比較スライドの右側ボックス
         },
+        # 'sectionSlide': 章の扉スライドの要素定義
         'sectionSlide': {
-            'title':     {'left': 55, 'top': 230, 'width': 840, 'height': 80},
-            'ghostNum':  {'left': 35, 'top': 120, 'width': 300, 'height': 200},
+            'title':    {'left': 55, 'top': 230, 'width': 840, 'height': 80}, # 章タイトルの位置とサイズ
+            'ghostNum': {'left': 35, 'top': 120, 'width': 300, 'height': 200}, # 背景の大きな章番号
         },
+        # 'footer': 全スライド共通のフッター要素定義
         'footer': {
-            'leftText':  {'left': 15, 'top': 505, 'width': 250, 'height': 20},
-            'rightPage': {'right': 15, 'top': 505, 'width': 50,  'height': 20},
+            'leftText':  {'left': 15, 'top': 505, 'width': 250, 'height': 20}, # 左下のコピーライトテキスト
+            'rightPage': {'right': 15, 'top': 505, 'width': 50,  'height': 20}, # 右下のページ番号
         },
+        # 'bottomBar': 全スライド共通の下部にある青い線
         'bottomBar': {'left': 0, 'top': 534, 'width': 960, 'height': 6}
     },
+
+    # --- フォント設定 ---
     'FONTS': {
-        'family': 'Arial',
-        'sizes': {
+        'family': 'Arial', # 基本となるフォントファミリー
+        'sizes': { # 各要素ごとのフォントサイズ (ポイント単位)
             'title': 45, 'date': 16, 'sectionTitle': 38, 'contentTitle': 28,
             'subhead': 18, 'body': 14, 'footer': 9, 'cardTitle': 16,
             'cardDesc': 12, 'ghostNum': 180, 'processStep': 14, 'timelineLabel': 10,
             'laneTitle': 13,
         }
     },
+
+    # --- カラーパレット設定 ---
+    # デザインで使用する色を名前付きで定義します。
     'COLORS': {
         'primary_blue': '4285F4', 'google_red': 'EA4335', 'google_yellow': 'FBBC04',
         'google_green': '34A853', 'text_primary': '333333', 'text_white': 'FFFFFF',
@@ -77,10 +106,16 @@ CONFIG = {
         'card_border': 'DADCE0', 'ghost_gray': 'EFEFED', 'faint_gray': 'E8EAED',
         'neutral_gray': '9E9E9E', 'lane_title_bg': 'F5F5F3', 'lane_border': 'DADCE0',
     },
+
+    # --- ロゴ画像の設定 ---
+    # ヘッダー用と結びのスライド用のロゴ画像のURLを指定します。
     'LOGOS': {
         'header': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png',
         'closing': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
     },
+
+    # --- フッターテキストの設定 ---
+    # f-stringを使って現在の年を自動的に埋め込んでいます。
     'FOOTER_TEXT': f"© {date.today().year} Your Organization"
 }
 
@@ -111,25 +146,64 @@ class LayoutManager:
         }
 
 class SlideGenerator:
-    """slide_dataに基づいて各スライドを生成するメソッドを持つクラス"""
+    """
+    slide_dataに基づいて各スライドを生成するメソッドを持つクラス。
+    このクラスが、PowerPointファイルの中身を作成する心臓部です。
+    """
     def __init__(self):
+        """
+        SlideGeneratorクラスが作られたときに最初に実行される処理です。
+        """
+        # 章番号を管理するためのカウンターを初期化します。
         self._section_counter = 0
+
+        # ★★★ 新しいスライドデザインを追加する場合の最重要ポイント ★★★
+        # この `slide_generators` 辞書（dictionary）は、slide_dataの`type`キー（例: 'title'）と、
+        # そのスライドを描画するためのメソッド（例: self._create_title_slide）を結びつけています。
+        #
+        # 新しいスライドタイプ、例えば 'quote'（引用）を追加したい場合は、以下の手順を踏みます。
+        # 1. このクラス内に `_create_quote_slide` という新しいメソッドを作成します。
+        #    このメソッドは、他の `_create_*_slide` メソッドを参考に、引用スライドのデザインを描画する処理を記述します。
+        # 2. 下の辞書に、新しいキーと値のペアを追加します。
+        #    'quote': self._create_quote_slide,
+        #
+        # 3. 【重要】AIに新しいスライドタイプを理解させるため、AIへの指示書である
+        #    「プロンプトファイル（.txt）」も修正する必要があります。
+        #    プロンプト内の「3.0 slide_dataスキーマ定義」セクションに、新しいスライドタイプ 'quote' が
+        #    どのようなデータ（キーと値）を持つかを定義してください。
+        #
+        # これら2つの修正を行うことで、AIが新しいデザインのスライドデータを生成し、
+        # このPythonスクリプトがそれを解釈して正しく描画できるようになります。
         self.slide_generators = {
-            'title': self._create_title_slide, 'section': self._create_section_slide,
-            'content': self._create_content_slide, 'cards': self._create_cards_slide,
-            'table': self._create_table_slide, 'closing': self._create_closing_slide,
-            'compare': self._create_compare_slide, 'process': self._create_process_slide,
-            'timeline': self._create_timeline_slide, 'diagram': self._create_diagram_slide,
+            'title': self._create_title_slide,
+            'section': self._create_section_slide,
+            'content': self._create_content_slide,
+            'cards': self._create_cards_slide,
+            'table': self._create_table_slide,
+            'closing': self._create_closing_slide,
+            'compare': self._create_compare_slide,
+            'process': self._create_process_slide,
+            'timeline': self._create_timeline_slide,
+            'diagram': self._create_diagram_slide,
             'progress': self._create_progress_slide,
         }
+
     def _set_font_style(self, run, style_opts):
+        """
+        テキストの一部（run）に対して、フォントのスタイル（フォント名、サイズ、太字、色）を設定する共通メソッド。
+        """
         font = run.font
         font.name = style_opts.get('family', CONFIG['FONTS']['family'])
         font.size = Pt(style_opts.get('size', CONFIG['FONTS']['sizes']['body']))
         font.bold = style_opts.get('bold', False)
         color_str = style_opts.get('color', CONFIG['COLORS']['text_primary'])
         font.color.rgb = RGBColor.from_string(color_str)
+
     def _parse_inline_styles(self, text):
+        """
+        文字列の中から、`**太字**` や `[[ハイライト]]` のような特別な記法を見つけ出し、
+        スタイル情報を持つパーツのリストに分解するメソッド。
+        """
         pattern = r'(\*\*|\[\[)(.*?)\1'
         parts, last_end = [], 0
         for match in re.finditer(pattern, text):
@@ -141,38 +215,51 @@ class SlideGenerator:
             last_end = end
         if last_end < len(text): parts.append({'text': text[last_end:], 'style': {}})
         return parts
+
     def _set_styled_text(self, text_frame, text, base_style_opts):
-        text_frame.clear()
+        """
+        テキストボックス（text_frame）に、インラインスタイル（太字など）を適用しながらテキストを設定するメソッド。
+        """
+        text_frame.clear()  # 既存のテキストをクリア
         p = text_frame.paragraphs[0]
         p.font.name = base_style_opts.get('family', CONFIG['FONTS']['family'])
         p.font.size = Pt(base_style_opts.get('size', CONFIG['FONTS']['sizes']['body']))
         p.alignment = base_style_opts.get('align', PP_ALIGN.LEFT)
-        for i, line in enumerate(text.split('\n')):
+        for i, line in enumerate(text.split('\n')): # 改行で分割して1行ずつ処理
             if i > 0: p = text_frame.add_paragraph()
             parts = self._parse_inline_styles(line) or [{'text': line, 'style': {}}]
             for part in parts:
                 run = p.add_run()
                 run.text = part['text']
                 self._set_font_style(run, {**base_style_opts, **part['style']})
+
     def _set_bullets_with_inline_styles(self, text_frame, points, base_style_opts):
+        """
+        箇条書きリストをテキストボックスに設定するメソッド。各項目でインラインスタイルも使える。
+        """
         text_frame.clear()
         for i, point_text in enumerate(points):
             p = text_frame.paragraphs[0] if i == 0 else text_frame.add_paragraph()
             run_bullet = p.add_run()
-            run_bullet.text = "• "
+            run_bullet.text = "• " # 箇条書きの点（•）を追加
             self._set_font_style(run_bullet, base_style_opts)
+            
             parts = self._parse_inline_styles(point_text)
             for part in parts:
                 run = p.add_run()
                 run.text = part['text']
                 self._set_font_style(run, {**base_style_opts, **part['style']})
+
     def _draw_bottom_bar(self, slide, layout):
+        """スライド下部の青い線を描画する共通メソッド。"""
         rect = layout.get_rect('bottomBar')
         shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, rect['left'], rect['top'], rect['width'], rect['height'])
         shape.fill.solid()
         shape.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['primary_blue'])
         shape.line.fill.background()
+
     def _add_google_footer(self, slide, layout, page_num):
+        """フッター（コピーライトとページ番号）を描画する共通メソッド。"""
         rect = layout.get_rect('footer.leftText')
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, CONFIG['FOOTER_TEXT'], {'size': CONFIG['FONTS']['sizes']['footer']})
@@ -182,7 +269,9 @@ class SlideGenerator:
             self._set_styled_text(textbox.text_frame, str(page_num), {
                 'size': CONFIG['FONTS']['sizes']['footer'], 'color': CONFIG['COLORS']['primary_blue'], 'align': PP_ALIGN.RIGHT
             })
+
     def _draw_standard_title_header(self, slide, layout, key, title):
+        """コンテンツスライドの共通ヘッダー（ロゴ、タイトル、下線）を描画するメソッド。"""
         rect = layout.get_rect(f'{key}.headerLogo')
         try:
             response = requests.get(CONFIG['LOGOS']['header'])
@@ -197,13 +286,19 @@ class SlideGenerator:
         shape.fill.solid()
         shape.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['primary_blue'])
         shape.line.fill.background()
+
     def _draw_subhead_if_any(self, slide, layout, key, subhead):
+        """サブヘッド（小見出し）があれば描画するメソッド。"""
         if not subhead: return 0
         rect = layout.get_rect(f'{key}.subhead')
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, subhead, {'size': CONFIG['FONTS']['sizes']['subhead']})
         return layout.px_to_emu(36)
+
+    # --- ここから下は、各スライドタイプを描画するための具体的なメソッド群です ---
+
     def _create_title_slide(self, slide, data, layout, page_num):
+        """タイプ 'title' のスライド（表紙）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         rect = layout.get_rect('titleSlide.logo')
@@ -219,7 +314,9 @@ class SlideGenerator:
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, data.get('date', ''), {'size': CONFIG['FONTS']['sizes']['date']})
         self._draw_bottom_bar(slide, layout)
+
     def _create_section_slide(self, slide, data, layout, page_num):
+        """タイプ 'section' のスライド（章の扉）を作成します。"""
         self._section_counter += 1
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_gray'])
@@ -235,7 +332,9 @@ class SlideGenerator:
             'size': CONFIG['FONTS']['sizes']['sectionTitle'], 'bold': True, 'align': PP_ALIGN.CENTER
         })
         self._add_google_footer(slide, layout, page_num)
+
     def _create_content_slide(self, slide, data, layout, page_num):
+        """タイプ 'content' のスライド（基本的な箇条書き）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -246,7 +345,9 @@ class SlideGenerator:
         self._set_bullets_with_inline_styles(textbox.text_frame, data.get('points', []), {})
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_cards_slide(self, slide, data, layout, page_num):
+        """タイプ 'cards' のスライド（カード形式）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -275,7 +376,9 @@ class SlideGenerator:
                 self._set_styled_text(tf, f"**{item.get('title', '')}**\n{item.get('desc', '')}", {'size': CONFIG['FONTS']['sizes']['cardDesc']})
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_table_slide(self, slide, data, layout, page_num):
+        """タイプ 'table' のスライド（表）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -300,7 +403,9 @@ class SlideGenerator:
                 cell.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_compare_slide(self, slide, data, layout, page_num):
+        """タイプ 'compare' のスライド（2項目比較）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -325,7 +430,9 @@ class SlideGenerator:
         draw_compare_box(right_rect, data.get('rightTitle', ''), data.get('rightItems', []))
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_process_slide(self, slide, data, layout, page_num):
+        """タイプ 'process' のスライド（手順・工程）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -358,7 +465,9 @@ class SlideGenerator:
             self._set_styled_text(txt_box.text_frame, step_text, {'size': CONFIG['FONTS']['sizes']['processStep']})
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_timeline_slide(self, slide, data, layout, page_num):
+        """タイプ 'timeline' のスライド（時系列）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -393,7 +502,9 @@ class SlideGenerator:
             self._set_styled_text(date_box.text_frame, m.get('date', ''), {'size': CONFIG['FONTS']['sizes']['timelineLabel'], 'color': CONFIG['COLORS']['neutral_gray'], 'align': PP_ALIGN.CENTER})
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_diagram_slide(self, slide, data, layout, page_num):
+        """タイプ 'diagram' のスライド（レーン図）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -440,7 +551,9 @@ class SlideGenerator:
                         arrow.fill.solid(); arrow.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['primary_blue']); arrow.line.fill.background()
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_progress_slide(self, slide, data, layout, page_num):
+        """タイプ 'progress' のスライド（進捗バー）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         self._draw_standard_title_header(slide, layout, 'contentSlide', data.get('title'))
@@ -465,7 +578,9 @@ class SlideGenerator:
             self._set_styled_text(pct_box.text_frame, f"{percent}%", {'size': CONFIG['FONTS']['sizes']['timelineLabel'], 'color': CONFIG['COLORS']['neutral_gray']})
         self._draw_bottom_bar(slide, layout)
         self._add_google_footer(slide, layout, page_num)
+
     def _create_closing_slide(self, slide, data, layout, page_num):
+        """タイプ 'closing' のスライド（結び）を作成します。"""
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['background_white'])
         try:

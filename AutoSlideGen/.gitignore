@@ -1,5 +1,9 @@
+# python仮想環境
+.venv
+
 # 設定ファイル
 .env
+
 
 # Lambdaのライブラリ圧縮前は不要
 lambda-layer-requests/python

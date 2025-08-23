@@ -2,9 +2,6 @@
 
 # ==============================================================================
 # 必要なライブラリをインポートします
-# boto3: AWSのサービス(S3など)をPythonから操作するためのSDK
-# uuid: 一意なファイル名を生成するために使用
-# その他: PowerPoint生成に必要な既存のライブラリ
 # ==============================================================================
 import json
 import os
@@ -24,32 +21,19 @@ from pptx.enum.shapes import MSO_SHAPE
 from PIL import Image
 
 # ==============================================================================
-# S3クライアントの初期化
+# AWS S3を操作するためのクライアントを初期化します
 # ==============================================================================
 s3_client = boto3.client('s3')
 
 # ==============================================================================
-# 1. マスターデザイン設定 (固定テンプレート部分)
+# 1. マスターデザイン設定
 #
 # この`CONFIG`辞書は、生成されるPowerPointスライド全体のデザインを定義する「設計図」です。
-# 色、フォントサイズ、ロゴのURL、各要素の配置場所など、見た目に関するすべての設定がここに集約されています。
-#
-# ★★★ AWS Lambda 環境変数による設定 ★★★
-# 以下の項目は、Lambdaの「環境変数」に設定することで、コードをデプロイし直さずに
-# デザインの一部を動的に変更できます。設定し忘れないように注意してください。
-#
-# - LOGO_HEADER_URL: ヘッダーや表紙に表示するロゴ画像のURL
-# - LOGO_CLOSING_URL: 結びのスライドに表示するロゴ画像のURL
-# - FOOTER_ORGANIZATION_NAME: フッターに表示する組織名
-# - DEFAULT_FONT_FAMILY: スライド全体で使用する基本フォント名 (例: 'Meiryo UI')
-# - THEME_COLOR_PRIMARY: スライドのテーマカラーとなるアクセントカラー (16進数カラーコード)
-#
-# 環境変数が設定されていない場合は、下のコードに記述されているデフォルト値が使用されます。
+# Lambdaの環境変数から動的に設定を読み込むことで、コードを変更せずにデザインを調整できます。
 # ==============================================================================
 
-# Lambdaの環境変数から設定を読み込みます。
-# os.environ.get('環境変数名', 'デフォルト値') を使うことで、環境変数が設定されていない場合でも
-# エラーにならず、デフォルト値が使われるため安全です。
+# 環境変数からロゴURLやフォント名などを読み込みます。
+# os.environ.get('キー', 'デフォルト値') を使うことで、環境変数が未設定の場合でもエラーを防ぎます。
 logo_header_url = os.environ.get(
     'LOGO_HEADER_URL',
     'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
@@ -62,51 +46,44 @@ footer_org_name = os.environ.get('FOOTER_ORGANIZATION_NAME', 'Your Organization'
 default_font = os.environ.get('DEFAULT_FONT_FAMILY', 'Arial')
 primary_color = os.environ.get('THEME_COLOR_PRIMARY', '4285F4')
 
+# デザイン設定を格納するCONFIG辞書
 CONFIG = {
-    # --- スライドの基本サイズ定義 ---
-    # `BASE_PX`: デザインの基準となるピクセル単位のサイズ。Webデザインのように直感的に指定できます。
+    # スライドの基本サイズ (ピクセルとPowerPoint内部単位EMU)
     'BASE_PX': {'W': 960, 'H': 540},
-    # `BASE_EMU`: PowerPoint内部で使われる単位(EMU)でのサイズ。`Inches`を使ってインチから変換しています。
     'BASE_EMU': {'W': Inches(10).emu, 'H': Inches(5.625).emu},
 
-    # --- 各要素の配置とサイズ定義 (ピクセル単位) ---
-    # ここで定義したピクセル値は、`LayoutManager`クラスによって自動的にEMU単位に変換されます。
+    # 各要素の配置とサイズ定義 (ピクセル単位)
     'POS_PX': {
-        # 'titleSlide': 表紙スライドの要素定義
         'titleSlide': {
-            'logo':      {'left': 55,  'top': 105, 'width': 135}, # ロゴの位置と幅
-            'title':     {'left': 50,  'top': 230, 'width': 800, 'height': 90}, # メインタイトルの位置とサイズ
-            'date':      {'left': 50,  'top': 340, 'width': 250, 'height': 40}, # 日付の位置とサイズ
+            'logo':      {'left': 55,  'top': 105, 'width': 135},
+            'title':     {'left': 50,  'top': 230, 'width': 800, 'height': 90},
+            'date':      {'left': 50,  'top': 340, 'width': 250, 'height': 40},
         },
-        # 'contentSlide': 本文スライドの共通要素定義
         'contentSlide': {
-            'headerLogo':    {'right': 20, 'top': 20, 'width': 75}, # ヘッダーロゴ (右からの距離で指定)
-            'title':         {'left': 25, 'top': 60,  'width': 830, 'height': 65}, # 各スライドのタイトル
-            'titleUnderline':{'left': 25, 'top': 128, 'width': 260, 'height': 4}, # タイトルの下線
-            'subhead':       {'left': 25, 'top': 140, 'width': 830, 'height': 30}, # サブヘッド（小見出し）
-            'body':          {'left': 25, 'top': 172, 'width': 910, 'height': 303}, # 本文全体のエリア
-            'gridArea':      {'left': 25, 'top': 172, 'width': 910, 'height': 303}, # カードなどを配置するグリッドエリア
-            'compareLeft':   {'left': 25, 'top': 172, 'width': 430, 'height': 303}, # 比較スライドの左側ボックス
-            'compareRight':  {'left': 505, 'top': 172, 'width': 430, 'height': 303}, # 比較スライドの右側ボックス
+            'headerLogo':    {'right': 20, 'top': 20, 'width': 75},
+            'title':         {'left': 25, 'top': 60,  'width': 830, 'height': 65},
+            'titleUnderline':{'left': 25, 'top': 128, 'width': 260, 'height': 4},
+            'subhead':       {'left': 25, 'top': 140, 'width': 830, 'height': 30},
+            'body':          {'left': 25, 'top': 172, 'width': 910, 'height': 303},
+            'gridArea':      {'left': 25, 'top': 172, 'width': 910, 'height': 303},
+            'compareLeft':   {'left': 25, 'top': 172, 'width': 430, 'height': 303},
+            'compareRight':  {'left': 505, 'top': 172, 'width': 430, 'height': 303},
         },
-        # 'sectionSlide': 章の扉スライドの要素定義
         'sectionSlide': {
-            'title':    {'left': 55, 'top': 230, 'width': 840, 'height': 80}, # 章タイトルの位置とサイズ
-            'ghostNum': {'left': 35, 'top': 120, 'width': 300, 'height': 200}, # 背景の大きな章番号
+            'title':    {'left': 55, 'top': 230, 'width': 840, 'height': 80},
+            'ghostNum': {'left': 35, 'top': 120, 'width': 300, 'height': 200},
         },
-        # 'footer': 全スライド共通のフッター要素定義
         'footer': {
-            'leftText':  {'left': 15, 'top': 505, 'width': 250, 'height': 20}, # 左下のコピーライトテキスト
-            'rightPage': {'right': 15, 'top': 505, 'width': 50,  'height': 20}, # 右下のページ番号
+            'leftText':  {'left': 15, 'top': 505, 'width': 250, 'height': 20},
+            'rightPage': {'right': 15, 'top': 505, 'width': 50,  'height': 20},
         },
-        # 'bottomBar': 全スライド共通の下部にある青い線
         'bottomBar': {'left': 0, 'top': 534, 'width': 960, 'height': 6}
     },
 
-    # --- フォント設定 ---
+    # フォント設定
     'FONTS': {
-        'family': default_font, # 基本となるフォントファミリー (環境変数で変更可能)
-        'sizes': { # 各要素ごとのフォントサイズ (ポイント単位)
+        'family': default_font,
+        'sizes': {
             'title': 45, 'date': 16, 'sectionTitle': 38, 'contentTitle': 28,
             'subhead': 18, 'body': 14, 'footer': 9, 'cardTitle': 16,
             'cardDesc': 12, 'ghostNum': 180, 'processStep': 14, 'timelineLabel': 10,
@@ -114,10 +91,9 @@ CONFIG = {
         }
     },
 
-    # --- カラーパレット設定 ---
-    # デザインで使用する色を名前付きで定義します。
+    # カラーパレット設定
     'COLORS': {
-        'primary_blue': primary_color, # テーマカラー (環境変数で変更可能)
+        'primary_blue': primary_color,
         'google_red': 'EA4335', 'google_yellow': 'FBBC04',
         'google_green': '34A853', 'text_primary': '333333', 'text_white': 'FFFFFF',
         'background_white': 'FFFFFF', 'background_gray': 'F8F9FA', 'card_bg': 'FFFFFF',
@@ -125,37 +101,45 @@ CONFIG = {
         'neutral_gray': '9E9E9E', 'lane_title_bg': 'F5F5F3', 'lane_border': 'DADCE0',
     },
 
-    # --- ロゴ画像の設定 ---
-    # ヘッダー用と結びのスライド用のロゴ画像のURLを指定します (環境変数で変更可能)。
+    # ロゴ画像の設定
     'LOGOS': {
         'header': logo_header_url,
         'closing': logo_closing_url
     },
 
-    # --- フッターテキストの設定 ---
-    # f-stringを使って現在の年と、環境変数で指定された組織名を自動的に埋め込んでいます。
+    # フッターテキストの設定
     'FOOTER_TEXT': f"© {date.today().year} {footer_org_name}"
 }
 
 # ==============================================================================
 # 2. コアロジック (PowerPoint生成の本体)
-# このセクションは create_PowerPoint_Separate.py から流用・最適化
 # ==============================================================================
 class LayoutManager:
-    """スライド上の要素の座標とサイズを管理するクラス"""
+    """
+    ピクセル単位で定義されたデザイン設定を、PowerPointの内部単位(EMU)に変換し、
+    各要素の正確な座標とサイズを計算する責務を持つクラス。
+    """
     def __init__(self, page_w_emu, page_h_emu):
         self.page_w_emu, self.page_h_emu = page_w_emu, page_h_emu
         self.base_w_px, self.base_h_px = CONFIG['BASE_PX']['W'], CONFIG['BASE_PX']['H']
+        # ピクセルからEMUへの変換スケールを計算
         self.scale_x, self.scale_y = self.page_w_emu / self.base_w_px, self.page_h_emu / self.base_h_px
+
     def px_to_emu(self, px, axis='x'):
+        """ピクセル値をEMU値に変換する。"""
         return int(px * (self.scale_x if axis == 'x' else self.scale_y))
+
     def get_rect(self, spec_path):
+        """CONFIG内のパス(例: 'titleSlide.logo')を指定して、EMU単位の矩形情報を取得する。"""
         keys = spec_path.split('.')
         pos_px = CONFIG['POS_PX']
         for key in keys: pos_px = pos_px[key]
+        
         left_px = pos_px.get('left')
+        # 'right'指定がある場合は、右端からの距離として左端座標を計算
         if pos_px.get('right') is not None and left_px is None:
             left_px = self.base_w_px - pos_px['right'] - pos_px['width']
+            
         return {
             'left': self.px_to_emu(left_px, 'x') if left_px is not None else None,
             'top': self.px_to_emu(pos_px['top'], 'y') if pos_px.get('top') is not None else None,
@@ -165,33 +149,12 @@ class LayoutManager:
 
 class SlideGenerator:
     """
-    slide_dataに基づいて各スライドを生成するメソッドを持つクラス。
-    このクラスが、PowerPointファイルの中身を作成する心臓部です。
+    slide_dataの各要素に基づき、対応するスライドを実際に描画するメソッド群を持つクラス。
+    PowerPointファイルの中身を作成する心臓部。
     """
     def __init__(self):
-        """
-        SlideGeneratorクラスが作られたときに最初に実行される処理です。
-        """
-        # 章番号を管理するためのカウンターを初期化します。
         self._section_counter = 0
-
-        # ★★★ 新しいスライドデザインを追加する場合の最重要ポイント ★★★
-        # この `slide_generators` 辞書（dictionary）は、slide_dataの`type`キー（例: 'title'）と、
-        # そのスライドを描画するためのメソッド（例: self._create_title_slide）を結びつけています。
-        #
-        # 新しいスライドタイプ、例えば 'quote'（引用）を追加したい場合は、以下の手順を踏みます。
-        # 1. このクラス内に `_create_quote_slide` という新しいメソッドを作成します。
-        #    このメソッドは、他の `_create_*_slide` メソッドを参考に、引用スライドのデザインを描画する処理を記述します。
-        # 2. 下の辞書に、新しいキーと値のペアを追加します。
-        #    'quote': self._create_quote_slide,
-        #
-        # 3. 【重要】AIに新しいスライドタイプを理解させるため、AIへの指示書である
-        #    「プロンプトファイル（.txt）」も修正する必要があります。
-        #    プロンプト内の「3.0 slide_dataスキーマ定義」セクションに、新しいスライドタイプ 'quote' が
-        #    どのようなデータ（キーと値）を持つかを定義してください。
-        #
-        # これら2つの修正を行うことで、AIが新しいデザインのスライドデータを生成し、
-        # このPythonスクリプトがそれを解釈して正しく描画できるようになります。
+        # slide_dataの'type'キーと、それを描画するメソッドを対応付ける辞書
         self.slide_generators = {
             'title': self._create_title_slide,
             'section': self._create_section_slide,
@@ -207,9 +170,7 @@ class SlideGenerator:
         }
 
     def _set_font_style(self, run, style_opts):
-        """
-        テキストの一部（run）に対して、フォントのスタイル（フォント名、サイズ、太字、色）を設定する共通メソッド。
-        """
+        """テキストの一部(run)にフォントスタイルを適用する共通メソッド。"""
         font = run.font
         font.name = style_opts.get('family', CONFIG['FONTS']['family'])
         font.size = Pt(style_opts.get('size', CONFIG['FONTS']['sizes']['body']))
@@ -218,10 +179,7 @@ class SlideGenerator:
         font.color.rgb = RGBColor.from_string(color_str)
 
     def _parse_inline_styles(self, text):
-        """
-        文字列の中から、`**太字**` や `[[ハイライト]]` のような特別な記法を見つけ出し、
-        スタイル情報を持つパーツのリストに分解するメソッド。
-        """
+        """`**太字**`や`[[ハイライト]]`のようなインライン記法を解析し、スタイル情報を持つパーツのリストに分解する。"""
         pattern = r'(\*\*|\[\[)(.*?)\1'
         parts, last_end = [], 0
         for match in re.finditer(pattern, text):
@@ -235,15 +193,13 @@ class SlideGenerator:
         return parts
 
     def _set_styled_text(self, text_frame, text, base_style_opts):
-        """
-        テキストボックス（text_frame）に、インラインスタイル（太字など）を適用しながらテキストを設定するメソッド。
-        """
-        text_frame.clear()  # 既存のテキストをクリア
+        """テキストボックスに、インラインスタイルを適用しながらテキストを設定する。"""
+        text_frame.clear()
         p = text_frame.paragraphs[0]
         p.font.name = base_style_opts.get('family', CONFIG['FONTS']['family'])
         p.font.size = Pt(base_style_opts.get('size', CONFIG['FONTS']['sizes']['body']))
         p.alignment = base_style_opts.get('align', PP_ALIGN.LEFT)
-        for i, line in enumerate(text.split('\n')): # 改行で分割して1行ずつ処理
+        for i, line in enumerate(text.split('\n')):
             if i > 0: p = text_frame.add_paragraph()
             parts = self._parse_inline_styles(line) or [{'text': line, 'style': {}}]
             for part in parts:
@@ -252,14 +208,12 @@ class SlideGenerator:
                 self._set_font_style(run, {**base_style_opts, **part['style']})
 
     def _set_bullets_with_inline_styles(self, text_frame, points, base_style_opts):
-        """
-        箇条書きリストをテキストボックスに設定するメソッド。各項目でインラインスタイルも使える。
-        """
+        """箇条書きリストをテキストボックスに設定する。"""
         text_frame.clear()
         for i, point_text in enumerate(points):
             p = text_frame.paragraphs[0] if i == 0 else text_frame.add_paragraph()
             run_bullet = p.add_run()
-            run_bullet.text = "• " # 箇条書きの点（•）を追加
+            run_bullet.text = "• "
             self._set_font_style(run_bullet, base_style_opts)
             
             parts = self._parse_inline_styles(point_text)
@@ -269,7 +223,7 @@ class SlideGenerator:
                 self._set_font_style(run, {**base_style_opts, **part['style']})
 
     def _draw_bottom_bar(self, slide, layout):
-        """スライド下部の青い線を描画する共通メソッド。"""
+        """スライド下部の青い線を描画する。"""
         rect = layout.get_rect('bottomBar')
         shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, rect['left'], rect['top'], rect['width'], rect['height'])
         shape.fill.solid()
@@ -277,7 +231,7 @@ class SlideGenerator:
         shape.line.fill.background()
 
     def _add_google_footer(self, slide, layout, page_num):
-        """フッター（コピーライトとページ番号）を描画する共通メソッド。"""
+        """フッター（コピーライトとページ番号）を描画する。"""
         rect = layout.get_rect('footer.leftText')
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, CONFIG['FOOTER_TEXT'], {'size': CONFIG['FONTS']['sizes']['footer']})
@@ -289,13 +243,13 @@ class SlideGenerator:
             })
 
     def _draw_standard_title_header(self, slide, layout, key, title):
-        """コンテンツスライドの共通ヘッダー（ロゴ、タイトル、下線）を描画するメソッド。"""
+        """コンテンツスライドの共通ヘッダー（ロゴ、タイトル、下線）を描画する。"""
         rect = layout.get_rect(f'{key}.headerLogo')
         try:
             response = requests.get(CONFIG['LOGOS']['header'])
             slide.shapes.add_picture(io.BytesIO(response.content), rect['left'], rect['top'], width=rect['width'])
         except Exception as e:
-            print(f"Warning: Could not load header logo. {e}")
+            print(f"Warning: ヘッダーロゴの読み込みに失敗しました。 {e}")
         rect = layout.get_rect(f'{key}.title')
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, title, {'size': CONFIG['FONTS']['sizes']['contentTitle'], 'bold': True})
@@ -306,14 +260,15 @@ class SlideGenerator:
         shape.line.fill.background()
 
     def _draw_subhead_if_any(self, slide, layout, key, subhead):
-        """サブヘッド（小見出し）があれば描画するメソッド。"""
+        """サブヘッド（小見出し）があれば描画する。"""
         if not subhead: return 0
         rect = layout.get_rect(f'{key}.subhead')
         textbox = slide.shapes.add_textbox(rect['left'], rect['top'], rect['width'], rect['height'])
         self._set_styled_text(textbox.text_frame, subhead, {'size': CONFIG['FONTS']['sizes']['subhead']})
         return layout.px_to_emu(36)
 
-    # --- ここから下は、各スライドタイプを描画するための具体的なメソッド群です ---
+    # --- ここから下は、各スライドタイプを描画するための具体的なメソッド群 ---
+    # (各メソッドの詳細は省略。内容は元のコードと同じ)
 
     def _create_title_slide(self, slide, data, layout, page_num):
         """タイプ 'title' のスライド（表紙）を作成します。"""
@@ -620,19 +575,31 @@ class SlideGenerator:
 def generate_presentation_in_memory(data):
     """
     slide_dataを元にPowerPointプレゼンテーションをメモリ上に生成し、
-    そのバイトデータを返す。
+    そのバイトデータを返す。これにより、Lambda環境でファイルシステムに書き込まずに済む。
     """
+    # 新しいプレゼンテーションオブジェクトを作成
     prs = Presentation()
+    # スライドサイズを設定
     prs.slide_width, prs.slide_height = CONFIG['BASE_EMU']['W'], CONFIG['BASE_EMU']['H']
+    
+    # レイアウトマネージャーとスライドジェネレーターを初期化
     layout_manager = LayoutManager(prs.slide_width, prs.slide_height)
     generator = SlideGenerator()
+    
     page_counter = 0
+    # slide_dataの各要素をループ処理
     for item in data:
+        # 表紙と結びのスライド以外でページ番号をカウントアップ
         if item['type'] not in ['title', 'closing']: page_counter += 1
+        
+        # 対応するスライド生成関数を取得
         generator_func = generator.slide_generators.get(item['type'])
         if generator_func:
-            slide = prs.slides.add_slide(prs.slide_layouts[6]) # 6は白紙レイアウト
+            # 白紙のスライドを追加
+            slide = prs.slides.add_slide(prs.slide_layouts[6]) 
+            # スライド生成関数を実行
             generator_func(slide, item, layout_manager, page_counter)
+            # スピーカーノートがあれば追加
             if item.get('notes'):
                 slide.notes_slide.notes_text_frame.text = item['notes']
     
@@ -648,14 +615,17 @@ def generate_presentation_in_memory(data):
 # ==============================================================================
 def lambda_handler(event, context):
     """
-    AWS Lambdaのエントリーポイント。API Gatewayからのリクエストを処理する。
+    AWS Lambdaのエントリーポイント。API GatewayからのHTTPリクエストを処理する。
+    `event`引数にはリクエスト情報（ヘッダー、ボディなど）が、
+    `context`引数には実行環境情報が含まれる。
     """
     print("--- Lambda関数がトリガーされました ---")
     
     try:
-        # 環境変数からS3バケット名を取得
+        # 環境変数からS3バケット名を取得。これはLambdaのコンソールで設定する必要がある。
         s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
         if not s3_bucket_name:
+            # バケット名が設定されていない場合は、設定不備としてエラーを発生させる
             raise ValueError("環境変数 'S3_BUCKET_NAME' が設定されていません。")
 
         # API Gatewayからのリクエストボディを取得・パース
@@ -670,8 +640,9 @@ def lambda_handler(event, context):
             raise ValueError("リクエストボディに 'slideData' が含まれていません。")
         print("'slideData'の取得に成功しました。")
 
-        # slideData文字列をPythonオブジェクトに安全に変換
+        # slideData文字列をPythonのリストオブジェクトに安全に変換
         try:
+            # ast.literal_evalは、eval()よりも安全に文字列をPythonのデータ構造に変換する
             slide_data_list = ast.literal_eval(slide_data_string.strip())
             if not isinstance(slide_data_list, list):
                 raise TypeError()
@@ -679,12 +650,13 @@ def lambda_handler(event, context):
             raise ValueError("slideDataの形式が不正です。Pythonのリスト形式の文字列である必要があります。")
         print("slideDataをPythonリストに変換しました。")
 
-        # PowerPointファイルをメモリ上に生成
+        # PowerPointファイルをメモリ上にバイトデータとして生成
         print("PowerPointファイルの生成を開始します...")
         powerpoint_bytes = generate_presentation_in_memory(slide_data_list)
         print("PowerPointファイルの生成が完了しました。")
 
-        # S3にアップロード
+        # 一意なファイル名を生成してS3にアップロード
+        # UUIDを使うことで、ファイル名の衝突を避ける
         file_name = f"presentations/{uuid.uuid4()}.pptx"
         print(f"S3バケット '{s3_bucket_name}' に '{file_name}' としてアップロードします...")
         s3_client.put_object(
@@ -696,12 +668,13 @@ def lambda_handler(event, context):
         print("S3へのアップロードが完了しました。")
 
         # S3オブジェクトの署名付きURLを生成（有効期限: 1時間）
+        # これにより、プライベートなS3オブジェクトに一時的な公開アクセスを許可できる
         print("署名付きダウンロードURLを生成します...")
         try:
             presigned_url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': s3_bucket_name, 'Key': file_name},
-                ExpiresIn=3600  # 1時間
+                ExpiresIn=3600  # 3600秒 = 1時間
             )
             print("URLの生成に成功しました。")
         except ClientError as e:
@@ -709,22 +682,25 @@ def lambda_handler(event, context):
             raise
 
         # 成功レスポンスを返す
+        # このレスポンスがAPI Gatewayを通じて呼び出し元（Salesforce）に返される
         return {
             'statusCode': 200,
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*' # CORSを許可
+                'Access-Control-Allow-Origin': '*' # CORSを許可（本番環境ではドメインを限定することが望ましい）
             },
             'body': json.dumps({
                 'message': 'プレゼンテーションが正常に作成されました。',
-                'downloadUrl': presigned_url
+                'downloadUrl': presigned_url,
+                's3Key': file_name  # Salesforceで保存・再利用するためのS3キーも返す
             })
         }
 
     except Exception as e:
-        # エラーハンドリング
+        # エラーハンドリング: 処理中に発生した例外をキャッチする
         print(f"エラーが発生しました: {e}")
-        error_type = "BadRequest" if isinstance(e, (ValueError, KeyError)) else "InternalServerError"
+        # エラーの種類に応じてステータスコードを分ける
+        error_type = "BadRequest" if isinstance(e, (ValueError, KeyError, TypeError)) else "InternalServerError"
         status_code = 400 if error_type == "BadRequest" else 500
         
         return {

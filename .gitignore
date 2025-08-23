@@ -1,0 +1,4 @@
+# python仮想環境
+.venv
+# デフォルトのmain.py
+main.py

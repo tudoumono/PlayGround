@@ -529,7 +529,7 @@ class SlideGenerator:
         gap_x = (right_x - left_x) / max(1, n - 1) if n > 1 else 0
         for i, m in enumerate(milestones):
             x = left_x + gap_x * i
-            dot = slide.shapes.add_shape(MSO_SHAPE.ELLIPSE, x - dot_r/2, base_y - dot_r/2, dot_r, dot_r)
+            dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, x - dot_r/2, base_y - dot_r/2, dot_r, dot_r)
             state = m.get('state', 'todo').lower()
             if state == 'done':
                 dot.fill.solid(); dot.fill.fore_color.rgb = RGBColor.from_string(CONFIG['COLORS']['google_green']); dot.line.fill.background()

@@ -86,14 +86,29 @@ def test_generate_and_get_url():
     generate_result = json.loads(generate_response['body'])
     print(f"✅ PowerPointファイルが正常に生成されました")
     
+    # ローカル環境の場合、downloadUrlからファイル名を抽出
     if generate_result.get('isLocal'):
-        print(f"   ローカルパス: {generate_result.get('localPath')}")
-        file_id = Path(generate_result.get('localPath', '')).stem
+        download_url = generate_result.get('downloadUrl', '')
+        print(f"   ローカルURL: {download_url}")
+        # file:// URLからファイル名を抽出
+        if download_url.startswith('file://'):
+            local_path = download_url.replace('file://', '')
+            file_id = Path(local_path).stem  # 拡張子を除いたファイル名
+        else:
+            file_id = generate_result.get('s3Key', '').replace('.pptx', '')
     else:
         print(f"   S3キー: {generate_result.get('s3Key')}")
-        file_id = generate_result.get('s3Key')
+        # S3キーからファイルIDを抽出（presentations/uuid.pptx -> uuid）
+        s3_key = generate_result.get('s3Key', '')
+        file_id = Path(s3_key).stem
     
     print(f"   ファイルID: {file_id}")
+    
+    # ファイルIDが空の場合はエラー
+    if not file_id:
+        print(f"❌ エラー: ファイルIDを取得できませんでした")
+        print(f"   レスポンス内容: {generate_result}")
+        return False
     
     # ==============================================================================
     # ステップ2: URL取得テスト（fileIdを使用）

@@ -12,5 +12,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "boto3>=1.40.16",
-    "dotenv>=0.9.9",
+    "python-dotenv>=1.0.0",
 ]

@@ -9,9 +9,7 @@ import io
 import re
 import ast
 import uuid
-import boto3
 from datetime import date
-from botocore.exceptions import ClientError
 import requests
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -21,9 +19,33 @@ from pptx.enum.shapes import MSO_SHAPE
 from PIL import Image
 
 # ==============================================================================
-# AWS S3を操作するためのクライアントを初期化します
+# 環境判定とローカル環境用の設定
 # ==============================================================================
-s3_client = boto3.client('s3')
+# Lambda環境かローカル環境かを判定
+IS_LAMBDA = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+
+if not IS_LAMBDA:
+    # ローカル環境の場合、python-dotenvを使用して.envファイルから環境変数を読み込む
+    try:
+        from dotenv import load_dotenv
+        # プロジェクトルートの.envファイルを読み込む
+        env_path = os.path.join(os.path.dirname(__file__), '.env')
+        load_dotenv(env_path)
+        print(f"ローカル環境: .envファイルから環境変数を読み込みました: {env_path}")
+    except ImportError:
+        print("警告: python-dotenvがインストールされていません。環境変数を直接設定してください。")
+    except Exception as e:
+        print(f"警告: .envファイルの読み込みに失敗しました: {e}")
+
+# AWS関連のインポート（Lambda環境でのみ必要）
+if IS_LAMBDA:
+    import boto3
+    from botocore.exceptions import ClientError
+    # AWS S3を操作するためのクライアントを初期化
+    s3_client = boto3.client('s3')
+else:
+    # ローカル環境ではS3クライアントは使用しない（必要に応じて初期化）
+    s3_client = None
 
 # ==============================================================================
 # 1. マスターデザイン設定
@@ -32,8 +54,10 @@ s3_client = boto3.client('s3')
 # Lambdaの環境変数から動的に設定を読み込むことで、コードを変更せずにデザインを調整できます。
 # ==============================================================================
 
-# 環境変数からロゴURLやフォント名などを読み込みます。
-# os.environ.get('キー', 'デフォルト値') を使うことで、環境変数が未設定の場合でもエラーを防ぎます。
+# 環境変数からデザイン設定を読み込みます
+# os.environ.get('キー', 'デフォルト値') を使うことで、環境変数が未設定の場合でもエラーを防ぎます
+
+# ロゴURL
 logo_header_url = os.environ.get(
     'LOGO_HEADER_URL',
     'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
@@ -42,14 +66,39 @@ logo_closing_url = os.environ.get(
     'LOGO_CLOSING_URL',
     'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1024px-Google_2015_logo.svg.png'
 )
+
+# ブランディング設定
 footer_org_name = os.environ.get('FOOTER_ORGANIZATION_NAME', 'Your Organization')
+
+# フォント設定
 default_font = os.environ.get('DEFAULT_FONT_FAMILY', 'Arial')
+font_size_title = int(os.environ.get('FONT_SIZE_TITLE', '45'))
+font_size_section = int(os.environ.get('FONT_SIZE_SECTION', '38'))
+font_size_content_title = int(os.environ.get('FONT_SIZE_CONTENT_TITLE', '28'))
+font_size_subhead = int(os.environ.get('FONT_SIZE_SUBHEAD', '18'))
+font_size_body = int(os.environ.get('FONT_SIZE_BODY', '14'))
+font_size_footer = int(os.environ.get('FONT_SIZE_FOOTER', '9'))
+
+# カラー設定
 primary_color = os.environ.get('THEME_COLOR_PRIMARY', '4285F4')
+color_red = os.environ.get('THEME_COLOR_RED', 'EA4335')
+color_yellow = os.environ.get('THEME_COLOR_YELLOW', 'FBBC04')
+color_green = os.environ.get('THEME_COLOR_GREEN', '34A853')
+text_primary = os.environ.get('TEXT_PRIMARY_COLOR', '333333')
+text_white = os.environ.get('TEXT_WHITE_COLOR', 'FFFFFF')
+bg_white = os.environ.get('BACKGROUND_WHITE_COLOR', 'FFFFFF')
+bg_gray = os.environ.get('BACKGROUND_GRAY_COLOR', 'F8F9FA')
+card_bg = os.environ.get('CARD_BG_COLOR', 'FFFFFF')
+card_border = os.environ.get('CARD_BORDER_COLOR', 'DADCE0')
+
+# スライドサイズ設定
+slide_width_px = int(os.environ.get('SLIDE_WIDTH_PX', '960'))
+slide_height_px = int(os.environ.get('SLIDE_HEIGHT_PX', '540'))
 
 # デザイン設定を格納するCONFIG辞書
 CONFIG = {
     # スライドの基本サイズ (ピクセルとPowerPoint内部単位EMU)
-    'BASE_PX': {'W': 960, 'H': 540},
+    'BASE_PX': {'W': slide_width_px, 'H': slide_height_px},
     'BASE_EMU': {'W': Inches(10).emu, 'H': Inches(5.625).emu},
 
     # 各要素の配置とサイズ定義 (ピクセル単位)
@@ -84,9 +133,18 @@ CONFIG = {
     'FONTS': {
         'family': default_font,
         'sizes': {
-            'title': 45, 'date': 16, 'sectionTitle': 38, 'contentTitle': 28,
-            'subhead': 18, 'body': 14, 'footer': 9, 'cardTitle': 16,
-            'cardDesc': 12, 'ghostNum': 180, 'processStep': 14, 'timelineLabel': 10,
+            'title': font_size_title, 
+            'date': 16, 
+            'sectionTitle': font_size_section, 
+            'contentTitle': font_size_content_title,
+            'subhead': font_size_subhead, 
+            'body': font_size_body, 
+            'footer': font_size_footer, 
+            'cardTitle': 16,
+            'cardDesc': 12, 
+            'ghostNum': 180, 
+            'processStep': 14, 
+            'timelineLabel': 10,
             'laneTitle': 13,
         }
     },
@@ -94,11 +152,20 @@ CONFIG = {
     # カラーパレット設定
     'COLORS': {
         'primary_blue': primary_color,
-        'google_red': 'EA4335', 'google_yellow': 'FBBC04',
-        'google_green': '34A853', 'text_primary': '333333', 'text_white': 'FFFFFF',
-        'background_white': 'FFFFFF', 'background_gray': 'F8F9FA', 'card_bg': 'FFFFFF',
-        'card_border': 'DADCE0', 'ghost_gray': 'EFEFED', 'faint_gray': 'E8EAED',
-        'neutral_gray': '9E9E9E', 'lane_title_bg': 'F5F5F3', 'lane_border': 'DADCE0',
+        'google_red': color_red, 
+        'google_yellow': color_yellow,
+        'google_green': color_green, 
+        'text_primary': text_primary, 
+        'text_white': text_white,
+        'background_white': bg_white, 
+        'background_gray': bg_gray, 
+        'card_bg': card_bg,
+        'card_border': card_border, 
+        'ghost_gray': 'EFEFED', 
+        'faint_gray': 'E8EAED',
+        'neutral_gray': '9E9E9E', 
+        'lane_title_bg': 'F5F5F3', 
+        'lane_border': card_border,
     },
 
     # ロゴ画像の設定
@@ -616,17 +683,22 @@ def generate_presentation_in_memory(data):
 def lambda_handler(event, context):
     """
     AWS Lambdaのエントリーポイント。API GatewayからのHTTPリクエストを処理する。
+    ローカル環境でも動作可能。
     `event`引数にはリクエスト情報（ヘッダー、ボディなど）が、
     `context`引数には実行環境情報が含まれる。
     """
-    print("--- Lambda関数がトリガーされました ---")
+    if IS_LAMBDA:
+        print("--- Lambda関数がトリガーされました ---")
+    else:
+        print("--- ローカル環境で実行中 ---")
     
     try:
-        # 環境変数からS3バケット名を取得。これはLambdaのコンソールで設定する必要がある。
-        s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
-        if not s3_bucket_name:
-            # バケット名が設定されていない場合は、設定不備としてエラーを発生させる
-            raise ValueError("環境変数 'S3_BUCKET_NAME' が設定されていません。")
+        # Lambda環境の場合のみ、S3バケット名を確認
+        if IS_LAMBDA:
+            s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
+            if not s3_bucket_name:
+                # バケット名が設定されていない場合は、設定不備としてエラーを発生させる
+                raise ValueError("環境変数 'S3_BUCKET_NAME' が設定されていません。")
 
         # API Gatewayからのリクエストボディを取得・パース
         print("リクエストボディを解析します...")
@@ -655,44 +727,67 @@ def lambda_handler(event, context):
         powerpoint_bytes = generate_presentation_in_memory(slide_data_list)
         print("PowerPointファイルの生成が完了しました。")
 
-        # 一意なファイル名を生成してS3にアップロード
-        # UUIDを使うことで、ファイル名の衝突を避ける
-        file_name = f"presentations/{uuid.uuid4()}.pptx"
-        print(f"S3バケット '{s3_bucket_name}' に '{file_name}' としてアップロードします...")
-        s3_client.put_object(
-            Bucket=s3_bucket_name,
-            Key=file_name,
-            Body=powerpoint_bytes,
-            ContentType='application/vnd.openxmlformats-officedocument.presentationml.presentation'
-        )
-        print("S3へのアップロードが完了しました。")
-
-        # S3オブジェクトの署名付きURLを生成（有効期限: 1時間）
-        # これにより、プライベートなS3オブジェクトに一時的な公開アクセスを許可できる
-        print("署名付きダウンロードURLを生成します...")
-        try:
-            presigned_url = s3_client.generate_presigned_url(
-                'get_object',
-                Params={'Bucket': s3_bucket_name, 'Key': file_name},
-                ExpiresIn=3600  # 3600秒 = 1時間
+        # 一意なファイル名を生成
+        file_id = str(uuid.uuid4())
+        
+        if IS_LAMBDA:
+            # Lambda環境: S3にアップロード
+            s3_prefix = os.environ.get('S3_PREFIX', 'presentations/')
+            file_name = f"{s3_prefix}{file_id}.pptx"
+            print(f"S3バケット '{s3_bucket_name}' に '{file_name}' としてアップロードします...")
+            s3_client.put_object(
+                Bucket=s3_bucket_name,
+                Key=file_name,
+                Body=powerpoint_bytes,
+                ContentType='application/vnd.openxmlformats-officedocument.presentationml.presentation'
             )
-            print("URLの生成に成功しました。")
-        except ClientError as e:
-            print(f"署名付きURLの生成に失敗しました: {e}")
-            raise
+            print("S3へのアップロードが完了しました。")
+
+            # S3オブジェクトの署名付きURLを生成
+            expiry = int(os.environ.get('PRESIGNED_URL_EXPIRY', '3600'))
+            print("署名付きダウンロードURLを生成します...")
+            try:
+                presigned_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': s3_bucket_name, 'Key': file_name},
+                    ExpiresIn=expiry
+                )
+                print("URLの生成に成功しました。")
+            except ClientError as e:
+                print(f"署名付きURLの生成に失敗しました: {e}")
+                raise
+                
+            download_url = presigned_url
+            s3_key = file_name
+        else:
+            # ローカル環境: ローカルファイルとして保存
+            output_dir = os.path.join(os.path.dirname(__file__), 'output')
+            os.makedirs(output_dir, exist_ok=True)
+            file_name = f"{file_id}.pptx"
+            file_path = os.path.join(output_dir, file_name)
+            
+            print(f"ローカルファイルとして保存します: {file_path}")
+            with open(file_path, 'wb') as f:
+                f.write(powerpoint_bytes)
+            print("ファイルの保存が完了しました。")
+            
+            # ローカルファイルのパスをURLとして返す
+            download_url = f"file://{os.path.abspath(file_path)}"
+            s3_key = file_name
 
         # 成功レスポンスを返す
-        # このレスポンスがAPI Gatewayを通じて呼び出し元（Salesforce）に返される
+        cors_origin = os.environ.get('ALLOWED_ORIGINS', '*')
         return {
             'statusCode': 200,
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*' # CORSを許可（本番環境ではドメインを限定することが望ましい）
+                'Access-Control-Allow-Origin': cors_origin
             },
             'body': json.dumps({
                 'message': 'プレゼンテーションが正常に作成されました。',
-                'downloadUrl': presigned_url,
-                's3Key': file_name  # Salesforceで保存・再利用するためのS3キーも返す
+                'downloadUrl': download_url,
+                's3Key': s3_key if IS_LAMBDA else None,  # Lambda環境のみでS3キーを返す
+                'isLocal': not IS_LAMBDA  # ローカル環境かどうかを示すフラグ
             })
         }
 

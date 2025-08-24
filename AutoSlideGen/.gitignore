@@ -6,8 +6,17 @@
 
 # pythonキャッシュ
 __pycache__
+
 # Lambdaのライブラリ圧縮前は不要
 lambda-layer-requests/python
 
-# logsフォルダ内のすべてのファイルを無視する
+# outputフォルダ内のすべてのファイルを無視する
 output/*.pptx
+
+# packageフォルダ内のすべてのファイルを無視する
+package/*
+
+# lambda_generate_package.zipは不要
+lambda_generate_package.zip
+# lambda-pptx-get_download_url.zipは不要
+lambda-pptx-get_download_url.zip

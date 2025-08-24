@@ -1,4 +1,4 @@
-## AutoSlideGen/README.md（見やすさ重視版）
+## AutoSlideGen/README.md
 
 ```markdown
 # AutoSlideGen 🚀
@@ -136,47 +136,61 @@ AutoSlideGen/
 
 ---
 
-## 🧪 ローカルテスト
+## ファイル構成と役割
 
-### 依存関係のインストール
+プロジェクトは、AIにスライドの内容を生成させる**プロンプト**と、その内容から実際にPowerPointファイルを生成する**Pythonスクリプト**で構成されています。
 
-```bash
-# uv推奨
-uv sync
+### 📜 プロンプト（AIへの指示書）
 
-# または pip
-pip install python-pptx Pillow requests boto3 python-dotenv
-```
+AIに対して、どのような形式でスライドデータ（`slide_data`）を生成してほしいかを定義するファイル群です。バージョンアップの経緯がわかります。
 
-### Lambda関数のテスト
+* **`Googleスライドが一瞬で完成する奇跡のプロンプト.txt`**
+    * **役割:** Google Apps Script (GAS) 向けのオリジナルプロンプトです。
+    * **特徴:** AIが`slideData`（JavaScriptの配列）を生成し、GASのコードテンプレート全体と共に出力するよう指示します。
 
-```bash
-python test_lambda.py
-```
+* **`Googleスライドが一瞬で完成する奇跡のプロンプトPython版_Ver. 1.0.txt`**
+    * **役割:** GAS版をPython (python-pptx) 向けに移植した最初のバージョンです。
+    * **特徴:** `content`, `cards`, `table`など基本的なスライドタイプに対応しています。
 
-### API統合テスト
+* **`Googleスライドが一瞬で完成する奇跡のプロンプトPython版_Ver. 1.1.txt`**
+    * **役割:** Ver 1.0を改良した更新版です。
+    * **特徴:** バグ修正や細かな表現の調整が加えられています。
 
-```bash
-cp .env_example .env   # .env作成
-# API URLを.envに記入
-python test_API.py
-```
+* **`Googleスライドが一瞬で完成する奇跡のプロンプトPython版_Ver. 2.0.txt`**
+    * **役割:** 対応するスライドタイプを大幅に増やしたメジャーアップデート版です。
+    * **特徴:** `compare`, `process`, `timeline`, `diagram`, `progress`といった表現力豊かなスライドタイプが追加され、GAS版とほぼ同等の機能になりました。
 
-> ⚠️ API呼び出しには **IAM認証（SigV4署名）** が必須です。
-
----
-
-## 📝 使用方法
-
-### API経由での呼び出し例
-
-```python
-# boto3 & SigV4署名付きリクエスト例
-```
-
-（省略・詳細はREADME本文参照）
+* **`Googleスライドが一瞬で完成する奇跡のプロンプトPython版_Ver. 2.0_Separate版.txt`**
+    * **役割:** API的な利用を想定した「データ分離型」のプロンプトです。
+    * **特徴:** AIの出力を`slide_data`のPythonリスト**そのもの**に限定します。これにより、PythonスクリプトとAIの生成物を明確に分離できます。
 
 ---
+
+### 🐍 Pythonスクリプト
+* **`create_PowerPoint.py`**
+    * **役割:** プロンプトVer. 2.0と対になるスクリプトです。
+    * **特徴:** スクリプト内にサンプル`slide_data`が直接記述されており、AIはこの部分を置き換える形で完全なスクリプトを生成します。
+
+* **`create_PowerPoint_Separate.py`**
+    * **役割:** `Separate版`プロンプトからの出力を受け取ってスライドを生成する、データ分離型のスクリプトです。
+    * **特徴:** `slide_data`を文字列として引数で受け取る関数や、AWS Lambdaで実行するための`lambda_handler`が含まれており、外部システムとの連携が容易になっています。
+
+* **`lambda_function.py`**
+    * **役割:** PowerPoint生成用のメインLambda関数です。
+    * **特徴:** API Gatewayからのリクエストを受け取り、PowerPointを生成してS3にアップロード、署名付きURLを返却します。環境変数でロゴやカラーのカスタマイズも可能です。
+
+* **`get_url_lambda.py`**
+    * **役割:** S3に保存されたファイルの新しいダウンロードURL生成用Lambda関数です。
+    * **特徴:** S3キーを受け取り、新しい署名付きURL（有効期限1時間）を生成して返却します。URL期限切れ時の再生成に使用します。
+
+* **`test_lambda.py`**
+    * **役割:** `create_PowerPoint_Separate.py`の動作をローカル環境でテストするためのスクリプトです。
+    * **特徴:** AWS Lambdaの実行環境を模倣し、`lambda_handler`にテストデータを渡してPowerPointファイルが正しく生成されるかを確認できます。
+
+* **`test_API.py`**
+    * **役割:** API Gateway経由でLambda関数をテストするスクリプトです。
+    * **特徴:** 実際のHTTPリクエストを送信し、PowerPoint生成APIとURL取得APIの両方をエンドツーエンドで動作確認できます。`.env`ファイルから環境変数を読み込みます。
+
 
 ## 🔧 カスタマイズ
 

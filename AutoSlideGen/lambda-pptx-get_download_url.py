@@ -6,6 +6,7 @@
 import os
 import json
 import glob
+from pathlib import Path
 
 # ==============================================================================
 # 環境判定とローカル環境用の設定
@@ -18,8 +19,8 @@ if not IS_LAMBDA:
     try:
         from dotenv import load_dotenv
         # プロジェクトルートの.envファイルを読み込む
-        env_path = os.path.join(os.path.dirname(__file__), '.env')
-        load_dotenv(env_path)
+        env_path = Path(__file__).parent / '.env'
+        load_dotenv(str(env_path))
         print(f"ローカル環境: .envファイルから環境変数を読み込みました: {env_path}")
     except ImportError:
         print("警告: python-dotenvがインストールされていません。環境変数を直接設定してください。")
@@ -129,28 +130,28 @@ def lambda_handler(event, context):
         
         else:
             # ローカル環境: ローカルファイルのパスを返す
-            output_dir = os.path.join(os.path.dirname(__file__), 'output')
+            output_dir = Path(__file__).parent / 'output'
             
             # fileIdまたはs3Keyからファイル名を取得
             if file_id:
                 file_name = f"{file_id}.pptx"
             elif s3_key:
                 # s3Keyからファイル名を抽出（パスの最後の部分）
-                file_name = os.path.basename(s3_key)
+                file_name = Path(s3_key).name
             else:
                 raise ValueError("ファイル識別子が不正です。")
             
-            file_path = os.path.join(output_dir, file_name)
+            file_path = output_dir / file_name
             
             # ファイルの存在確認
-            if not os.path.exists(file_path):
+            if not file_path.exists():
                 # ワイルドカードでファイルを検索（fileIdが部分一致する場合）
-                pattern = os.path.join(output_dir, f"*{file_id}*.pptx") if file_id else None
+                pattern = str(output_dir / f"*{file_id}*.pptx") if file_id else None
                 if pattern:
                     matching_files = glob.glob(pattern)
                     if matching_files:
-                        file_path = matching_files[0]  # 最初にマッチしたファイルを使用
-                        file_name = os.path.basename(file_path)
+                        file_path = Path(matching_files[0])  # 最初にマッチしたファイルを使用
+                        file_name = file_path.name
                     else:
                         print(f"エラー: ファイル '{file_name}' が見つかりません。")
                         return {
@@ -163,7 +164,7 @@ def lambda_handler(event, context):
                         }
             
             # ローカルファイルのパスをURLとして返す
-            download_url = f"file://{os.path.abspath(file_path)}"
+            download_url = f"file://{file_path.resolve()}"
             
             print(f"ローカルファイルのパスを返します: {download_url}")
             
@@ -175,7 +176,7 @@ def lambda_handler(event, context):
                 },
                 'body': json.dumps({
                     'downloadUrl': download_url,
-                    'localPath': os.path.abspath(file_path),
+                    'localPath': str(file_path.resolve()),
                     'fileName': file_name,
                     'isLocal': True,
                     'message': 'ローカルファイルのパスが正常に取得されました。'

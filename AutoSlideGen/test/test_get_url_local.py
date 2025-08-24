@@ -5,18 +5,18 @@ lambda-pptx-get_download_url.py のローカルテストスクリプト
 """
 
 import json
-import os
 import sys
 import importlib.util
+from pathlib import Path
 
 # 親ディレクトリをsys.pathに追加
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, parent_dir)
+parent_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(parent_dir))
 
 # lambda-pptx-get_download_url.pyをロード
 spec_get_url = importlib.util.spec_from_file_location(
     "lambda_get_download_url",
-    os.path.join(parent_dir, "lambda-pptx-get_download_url.py")
+    str(parent_dir / "lambda-pptx-get_download_url.py")
 )
 lambda_get_download_url = importlib.util.module_from_spec(spec_get_url)
 spec_get_url.loader.exec_module(lambda_get_download_url)
@@ -25,7 +25,7 @@ lambda_handler = lambda_get_download_url.lambda_handler
 # lambda-pptx-generator.pyをロード
 spec_generator = importlib.util.spec_from_file_location(
     "lambda_pptx_generator",
-    os.path.join(parent_dir, "lambda-pptx-generator.py")
+    str(parent_dir / "lambda-pptx-generator.py")
 )
 lambda_pptx_generator = importlib.util.module_from_spec(spec_generator)
 spec_generator.loader.exec_module(lambda_pptx_generator)
@@ -88,7 +88,7 @@ def test_generate_and_get_url():
     
     if generate_result.get('isLocal'):
         print(f"   ローカルパス: {generate_result.get('localPath')}")
-        file_id = os.path.basename(generate_result.get('localPath', '')).replace('.pptx', '')
+        file_id = Path(generate_result.get('localPath', '')).stem
     else:
         print(f"   S3キー: {generate_result.get('s3Key')}")
         file_id = generate_result.get('s3Key')
@@ -190,6 +190,7 @@ def test_generate_and_get_url():
 
 if __name__ == "__main__":
     # 環境変数の確認
+    import os
     print("🔍 環境変数を確認中...")
     
     env_vars = [

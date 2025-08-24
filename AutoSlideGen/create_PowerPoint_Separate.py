@@ -9,11 +9,11 @@
 # ==============================================================================
 import re
 import ast
-import os
 import io
 import sys
 import json
 import requests
+from pathlib import Path
 from datetime import date
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -513,10 +513,10 @@ def generate_presentation(data, output_dir='/tmp'):
             generator_func(slide, item, layout_manager, page_counter)
             if item.get('notes'):
                 slide.notes_slide.notes_text_frame.text = item['notes']
-    output_path = os.path.join(output_dir, SETTINGS['OUTPUT_FILENAME'])
-    prs.save(output_path)
+    output_path = Path(output_dir) / SETTINGS['OUTPUT_FILENAME']
+    prs.save(str(output_path))
     print(f"プレゼンテーションを '{output_path}' として保存しました。")
-    return output_path
+    return str(output_path)
 
 # ==============================================================================
 # 安全な変換と実行を行うメインの処理関数
@@ -570,8 +570,9 @@ if __name__ == '__main__':
         ai_output_string = sys.argv[1]
 
         # /tmp ディレクトリが存在しない場合は作成する
-        if not os.path.exists('/tmp'):
-            os.makedirs('/tmp')
+        tmp_dir = Path('/tmp')
+        if not tmp_dir.exists():
+            tmp_dir.mkdir(parents=True)
             
         safe_slide_generator_from_ai_script(ai_output_string)
     else:

@@ -9,6 +9,7 @@ import io
 import re
 import ast
 import uuid
+from pathlib import Path
 from datetime import date
 import requests
 from pptx import Presentation
@@ -29,8 +30,8 @@ if not IS_LAMBDA:
     try:
         from dotenv import load_dotenv
         # プロジェクトルートの.envファイルを読み込む
-        env_path = os.path.join(os.path.dirname(__file__), '.env')
-        load_dotenv(env_path)
+        env_path = Path(__file__).parent / '.env'
+        load_dotenv(str(env_path))
         print(f"ローカル環境: .envファイルから環境変数を読み込みました: {env_path}")
     except ImportError:
         print("警告: python-dotenvがインストールされていません。環境変数を直接設定してください。")
@@ -761,10 +762,10 @@ def lambda_handler(event, context):
             s3_key = file_name
         else:
             # ローカル環境: ローカルファイルとして保存
-            output_dir = os.path.join(os.path.dirname(__file__), 'output')
-            os.makedirs(output_dir, exist_ok=True)
+            output_dir = Path(__file__).parent / 'output'
+            output_dir.mkdir(exist_ok=True)
             file_name = f"{file_id}.pptx"
-            file_path = os.path.join(output_dir, file_name)
+            file_path = output_dir / file_name
             
             print(f"ローカルファイルとして保存します: {file_path}")
             with open(file_path, 'wb') as f:
@@ -772,7 +773,7 @@ def lambda_handler(event, context):
             print("ファイルの保存が完了しました。")
             
             # ローカルファイルのパスをURLとして返す
-            download_url = f"file://{os.path.abspath(file_path)}"
+            download_url = f"file://{file_path.resolve()}"
             s3_key = file_name
 
         # 成功レスポンスを返す

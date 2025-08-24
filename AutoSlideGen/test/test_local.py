@@ -7,17 +7,17 @@
 
 import json
 import sys
-import os
 import importlib.util
+from pathlib import Path
 
 # 親ディレクトリをsys.pathに追加
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, parent_dir)
+parent_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(parent_dir))
 
 # lambda-pptx-generator.pyをロード
 spec = importlib.util.spec_from_file_location(
     "lambda_pptx_generator",
-    os.path.join(parent_dir, "lambda-pptx-generator.py")
+    str(parent_dir / "lambda-pptx-generator.py")
 )
 lambda_pptx_generator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lambda_pptx_generator)
@@ -288,8 +288,9 @@ def test_local_lambda():
                     print(f"\n生成されたファイル: {file_path}")
                     
                     # ファイルサイズを表示
-                    if os.path.exists(file_path):
-                        file_size = os.path.getsize(file_path)
+                    file_path_obj = Path(file_path)
+                    if file_path_obj.exists():
+                        file_size = file_path_obj.stat().st_size
                         print(f"ファイルサイズ: {file_size:,} bytes")
         else:
             print("\n" + "=" * 60)

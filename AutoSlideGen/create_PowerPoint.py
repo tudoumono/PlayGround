@@ -5,10 +5,10 @@
 # Google風デザインに準拠したPowerPointプレゼンテーションを自動生成します。
 # 必要なライブラリ: pip install python-pptx Pillow requests
 # ==============================================================================
-import os
 import io
 import re
 import requests
+from pathlib import Path
 from datetime import date
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -585,9 +585,9 @@ def generate_presentation(data):
             generator_func(slide, item, layout_manager, page_counter)
             if item.get('notes'):
                 slide.notes_slide.notes_text_frame.text = item['notes']
-    output_path = SETTINGS['OUTPUT_FILENAME']
-    prs.save(output_path)
-    print(f"プレゼンテーションを '{os.path.abspath(output_path)}' として保存しました。")
+    output_path = Path(SETTINGS['OUTPUT_FILENAME'])
+    prs.save(str(output_path))
+    print(f"プレゼンテーションを '{output_path.resolve()}' として保存しました。")
 
 # ==============================================================================
 # 4. メイン実行ブロック

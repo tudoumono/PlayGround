@@ -15,6 +15,7 @@ output/*.pptx
 
 # packageフォルダ内のすべてのファイルを無視する
 package/*
+package_geturl/*
 
 # lambda_generate_package.zipは不要
 lambda_generate_package.zip

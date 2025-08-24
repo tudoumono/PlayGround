@@ -1,8 +1,8 @@
 # デプロイ用パッケージ作成手順
 
-このドキュメントでは、`lambda_function.py` と `get_url_lambda.py` のデプロイ用パッケージの作成方法を説明します。
+このドキュメントでは、`lambda-pptx-generator.py` と `lambda-pptx-get_download_url.py` のデプロイ用パッケージの作成方法を説明します。
 
-## 📦 PowerPoint生成用Lambda（lambda_function.py）
+## 📦 PowerPoint生成用Lambda（lambda-pptx-generator.py）
 
 ### PowerShellを使用（Windows）
 
@@ -23,7 +23,7 @@ Compress-Archive -Path ./* -DestinationPath ../lambda_generate_package.zip
 cd ..
 
 # 5. Lambda関数本体を追加
-Compress-Archive -Update -Path lambda_function.py -DestinationPath lambda_generate_package.zip
+Compress-Archive -Update -Path lambda-pptx-generator.py -DestinationPath lambda_generate_package.zip
 
 # 6. ファイルサイズを確認（50MB以下であることを確認）
 $size = (Get-Item lambda_generate_package.zip).Length / 1MB
@@ -49,13 +49,13 @@ zip -r ../lambda_generate_package.zip .
 cd ..
 
 # 5. Lambda関数本体を追加
-zip -u lambda_generate_package.zip lambda_function.py
+zip -u lambda_generate_package.zip lambda-pptx-generator.py
 
 # 6. ファイルサイズを確認
 ls -lh lambda_generate_package.zip
 ```
 
-## 🔗 URL取得用Lambda（get_url_lambda.py）
+## 🔗 URL取得用Lambda（lambda-pptx-get_download_url.py）
 
 ### PowerShellを使用（Windows）
 
@@ -65,7 +65,7 @@ ls -lh lambda_generate_package.zip
 Remove-Item -Path "./lambda_geturl_package.zip" -Force -ErrorAction SilentlyContinue
 
 # 2. Lambda関数本体をzip化
-Compress-Archive -Path get_url_lambda.py -DestinationPath lambda_geturl_package.zip
+Compress-Archive -Path lambda-pptx-get_download_url.py -DestinationPath lambda_geturl_package.zip
 
 # 3. ファイルサイズを確認
 $size = (Get-Item lambda_geturl_package.zip).Length / 1KB
@@ -79,7 +79,7 @@ Write-Host "Package size: $([math]::Round($size, 2)) KB"
 rm -f lambda_geturl_package.zip
 
 # 2. Lambda関数本体をzip化
-zip lambda_geturl_package.zip get_url_lambda.py
+zip lambda_geturl_package.zip lambda-pptx-get_download_url.py
 
 # 3. ファイルサイズを確認
 ls -lh lambda_geturl_package.zip
@@ -93,7 +93,7 @@ ls -lh lambda_geturl_package.zip
 - 関数名: `lambda-pptx-generator`
 - ランタイム: Python 3.13
 - パッケージ: `lambda_generate_package.zip`
-- ハンドラー: `lambda_function.lambda_handler`
+- ハンドラー: `lambda-pptx-generator.lambda_handler`
 - タイムアウト: 60秒
 - メモリ: 1024MB
 
@@ -101,7 +101,7 @@ ls -lh lambda_geturl_package.zip
 - 関数名: `lambda-geturl-generator`
 - ランタイム: Python 3.13
 - パッケージ: `lambda_geturl_package.zip`
-- ハンドラー: `get_url_lambda.lambda_handler`
+- ハンドラー: `lambda-pptx-get_download_url.lambda_handler`
 - タイムアウト: 10秒
 - メモリ: 256MB
 

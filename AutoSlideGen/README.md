@@ -26,7 +26,7 @@ AutoSlideGenは、非構造化テキスト（議事録・記事・メモなど�
 ```
 ┌─────────────┐      ┌──────────────┐      ┌─────────────────────┐      ┌──────────────────┐
 │   Client    │─────▶│ API Gateway  │─────▶│      Lambda         │─────▶│       S3         │
-│ (Salesforce)│ IAM  │   (HTTP)     │      │(lambda_function.py) │      │ presentations/   │
+│ (Salesforce)│ IAM  │   (HTTP)     │      │(lambda-pptx-generator.py)│   │ presentations/   │
 └─────────────┘      └──────────────┘      └─────────────────────┘      └──────────────────┘
                                                       │                      ↑
                                                       ▼                      │
@@ -39,7 +39,7 @@ AutoSlideGenは、非構造化テキスト（議事録・記事・メモなど�
                                                                              │
 ┌─────────────┐      ┌──────────────┐      ┌─────────────────────┐      │
 │   Client    │─────▶│ API Gateway  │─────▶│      Lambda         │──────┘
-│             │      │  /get-url    │      │(get_url_lambda.py)  │
+│             │      │  /get-url    │      │(lambda-pptx-get_download_url.py)│
 └─────────────┘      └──────────────┘      └─────────────────────┘
 ```
 
@@ -49,26 +49,32 @@ AutoSlideGenは、非構造化テキスト（議事録・記事・メモなど�
 
 ```
 AutoSlideGen/
-├── README.md                       # このファイル
-├── lambda_function.py              # メインのLambda関数（PowerPoint生成）
-├── get_url_lambda.py               # URL取得用Lambda関数（S3署名付きURL生成）
-├── test_local.py                   # ローカル環境テスト用スクリプト
-├── test_API.py                     # API統合テスト用
-├── .env                            # ローカル環境用の環境変数（要作成）
-├── .env_example                    # 環境変数サンプル
-├── pyproject.toml                  # 依存関係定義
-├── uv.lock                         # 依存関係ロックファイル
-├── output/                         # ローカル実行時の出力ディレクトリ
-└── docs/                           # ドキュメント類
-    └── プロンプト/                 # AI用プロンプト集
+├── README.md                         # このファイル
+├── lambda-pptx-generator.py         # メインのLambda関数（PowerPoint生成）
+├── lambda-pptx-get_download_url.py  # URL取得用Lambda関数（S3署名付きURL生成）
+├── create_PowerPoint.py             # PowerPoint生成スクリプト
+├── create_PowerPoint_Separate.py    # PowerPoint生成スクリプト（分離版）
+├── DEPLOY_GUIDE.md                   # デプロイガイド
+├── .env                              # ローカル環境用の環境変数（要作成）
+├── .env_example                      # 環境変数サンプル
+├── pyproject.toml                    # 依存関係定義
+├── uv.lock                           # 依存関係ロックファイル
+├── test/                             # テストスクリプト
+│   ├── test_local.py                 # ローカル環境テスト用スクリプト
+│   └── test_get_url_local.py        # URL取得テスト用スクリプト
+├── output/                           # ローカル実行時の出力ディレクトリ
+├── package/                          # Lambdaデプロイ用パッケージ用ディレクトリ
+├── utils/                            # ユーティリティディレクトリ
+└── docs/                             # ドキュメント類
+    └── プロンプト/                    # AI用プロンプト集
 ```
 
 ### 📁 Lambda関数の説明
 
 | ファイル | 機能 | Lambda/ローカル対応 |
 |--------|------|-------------------|
-| `lambda_function.py` | PowerPointファイルを生成しS3にアップロード | 両方対応 |
-| `get_url_lambda.py` | S3キーまたはファイルIDからダウンロードURLを生成 | 両方対応 |
+| `lambda-pptx-generator.py` | PowerPointファイルを生成しS3にアップロード | 両方対応 |
+| `lambda-pptx-get_download_url.py` | S3キーまたはファイルIDからダウンロードURLを生成 | 両方対応 |
 
 ---
 
@@ -136,7 +142,7 @@ Compress-Archive -Path ./* -DestinationPath ../lambda_package.zip
 cd ..
 
 # 5. Lambda関数本体を追加
-Compress-Archive -Update -Path lambda_function.py -DestinationPath lambda_package.zip
+Compress-Archive -Update -Path lambda-pptx-generator.py -DestinationPath lambda_package.zip
 
 # 6. ファイルサイズを確認（50MB以下であることを確認）
 $size = (Get-Item lambda_package.zip).Length / 1MB
@@ -162,7 +168,7 @@ zip -r ../lambda_package.zip .
 cd ..
 
 # 5. Lambda関数本体を追加
-zip -u lambda_package.zip lambda_function.py
+zip -u lambda_package.zip lambda-pptx-generator.py
 
 # 6. ファイルサイズを確認
 ls -lh lambda_package.zip
@@ -176,7 +182,7 @@ ls -lh lambda_package.zip
 
 | 設定項目 | 設定値 |
 |----------|--------|
-| **ファイル** | `lambda_function.py` |
+| **ファイル** | `lambda-pptx-generator.py` |
 | **Lambda関数名** | `lambda-pptx-generator` |
 | **パッケージタイプ** | Zip |
 | **ランタイム** | Python 3.13 |
@@ -195,7 +201,7 @@ ls -lh lambda_package.zip
 
 | 設定項目 | 設定値 |
 |----------|--------|
-| **ファイル** | `get_url_lambda.py` |
+| **ファイル** | `lambda-pptx-get_download_url.py` |
 | **Lambda関数名** | `lambda-pptx-get_download_url` |
 | **パッケージタイプ** | Zip |
 | **ランタイム** | Python 3.13 |
@@ -384,9 +390,20 @@ print(f"New Download URL: {result['downloadUrl']}")
 
 #### 1. PowerPoint生成
 
+**注意**: ファイル名にハイフンが含まれるため、直接インポートできません。`importlib`を使用するか、テストスクリプトを使用してください。
+
 ```python
-from lambda_function import lambda_handler
+import importlib.util
 import json
+
+# lambda-pptx-generator.pyをロード
+spec = importlib.util.spec_from_file_location(
+    "lambda_pptx_generator",
+    "lambda-pptx-generator.py"
+)
+lambda_pptx_generator = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lambda_pptx_generator)
+lambda_handler = lambda_pptx_generator.lambda_handler
 
 # テスト用イベントを作成
 event = {
@@ -405,8 +422,17 @@ file_id = result['s3Key']  # ローカルではファイル名
 #### 2. URL再取得（ローカルファイルパス）
 
 ```python
-from get_url_lambda import lambda_handler
+import importlib.util
 import json
+
+# lambda-pptx-get_download_url.pyをロード
+spec = importlib.util.spec_from_file_location(
+    "lambda_get_download_url",
+    "lambda-pptx-get_download_url.py"
+)
+lambda_get_download_url = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lambda_get_download_url)
+lambda_handler = lambda_get_download_url.lambda_handler
 
 # URL取得用イベント
 event = {

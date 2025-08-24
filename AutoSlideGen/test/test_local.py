@@ -2,15 +2,26 @@
 # -*- coding: utf-8 -*-
 
 """
-ローカル環境でlambda_function.pyをテストするためのスクリプト
+ローカル環境でlambda-pptx-generator.pyをテストするためのスクリプト
 """
 
 import json
 import sys
 import os
+import importlib.util
 
-# lambda_functionをインポート
-from lambda_function import lambda_handler
+# 親ディレクトリをsys.pathに追加
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+
+# lambda-pptx-generator.pyをロード
+spec = importlib.util.spec_from_file_location(
+    "lambda_pptx_generator",
+    os.path.join(parent_dir, "lambda-pptx-generator.py")
+)
+lambda_pptx_generator = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lambda_pptx_generator)
+lambda_handler = lambda_pptx_generator.lambda_handler
 
 def test_local_lambda():
     """

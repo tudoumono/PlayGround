@@ -220,7 +220,7 @@ if __name__ == "__main__":
     """
     このスクリプトを直接実行した場合のテストコード
     """
-    # テスト用のイベントを作成（lambda_function.pyで生成されたファイルIDを使用）
+    # テスト用のイベントを作成（lambda-pptx-generator.pyで生成されたファイルIDを使用）
     test_event = {
         'body': json.dumps({
             'fileId': 'test-file-id'  # 実際のファイルIDに置き換えてください

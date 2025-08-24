@@ -1,13 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-get_url_lambda.py のローカルテストスクリプト
-このスクリプトは、lambda_function.pyで生成されたファイルのURLを取得するテストを行います。
+lambda-pptx-get_download_url.py のローカルテストスクリプト
+このスクリプトは、lambda-pptx-generator.pyで生成されたファイルのURLを取得するテストを行います。
 """
 
 import json
 import os
-from get_url_lambda import lambda_handler
-from lambda_function import lambda_handler as generate_handler
+import sys
+import importlib.util
+
+# 親ディレクトリをsys.pathに追加
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+
+# lambda-pptx-get_download_url.pyをロード
+spec_get_url = importlib.util.spec_from_file_location(
+    "lambda_get_download_url",
+    os.path.join(parent_dir, "lambda-pptx-get_download_url.py")
+)
+lambda_get_download_url = importlib.util.module_from_spec(spec_get_url)
+spec_get_url.loader.exec_module(lambda_get_download_url)
+lambda_handler = lambda_get_download_url.lambda_handler
+
+# lambda-pptx-generator.pyをロード
+spec_generator = importlib.util.spec_from_file_location(
+    "lambda_pptx_generator",
+    os.path.join(parent_dir, "lambda-pptx-generator.py")
+)
+lambda_pptx_generator = importlib.util.module_from_spec(spec_generator)
+spec_generator.loader.exec_module(lambda_pptx_generator)
+generate_handler = lambda_pptx_generator.lambda_handler
 
 def test_generate_and_get_url():
     """

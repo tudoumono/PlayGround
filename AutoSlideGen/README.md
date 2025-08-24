@@ -170,17 +170,57 @@ ls -lh lambda_package.zip
 
 ### 📌 Lambda関数の作成と設定
 
-#### 1. Lambda関数の作成
+#### 1. Lambda関数の構成詳細
+
+##### **PowerPoint生成用Lambda関数**
+
+| 設定項目 | 設定値 |
+|----------|--------|
+| **ファイル** | `lambda_function.py` |
+| **Lambda関数名** | `lambda-pptx-generator` |
+| **パッケージタイプ** | Zip |
+| **ランタイム** | Python 3.13 |
+| **メモリ** | 1024MB |
+| **タイムアウト** | 60秒 |
+| **アーキテクチャ** | x86_64 |
+| **トリガー** | API Gateway |
+
+**API Gateway設定:**
+- **エンドポイント**: `POST /generate`
+- **認可**: IAM
+- **プロトコル**: HTTP
+- **APIエンドポイントタイプ**: Regional
+
+##### **URL取得用Lambda関数**
+
+| 設定項目 | 設定値 |
+|----------|--------|
+| **ファイル** | `get_url_lambda.py` |
+| **Lambda関数名** | `lambda-pptx-get_download_url` |
+| **パッケージタイプ** | Zip |
+| **ランタイム** | Python 3.13 |
+| **メモリ** | 1024MB |
+| **タイムアウト** | 10秒 |
+| **アーキテクチャ** | x86_64 |
+| **トリガー** | API Gateway |
+
+**API Gateway設定:**
+- **エンドポイント**: `POST /get-url`
+- **認可**: IAM  
+- **プロトコル**: HTTP
+- **APIエンドポイントタイプ**: Regional
+
+> ⚠️ **注意**: 上記の設定値は推奨値です。実際の環境に合わせて自由に変更してください。
+
+#### 2. Lambda関数の作成手順
 
 1. AWS Lambdaコンソールで新しい関数を作成
-   - 関数名: `lambda-pptx-generator`
-   - ランタイム: Python 3.13
-   - アーキテクチャ: x86_64
+   - 上記の表に従って各設定を行う
 
 2. 作成した`lambda_package.zip`をアップロード
    - 「コード」タブ → 「アップロード元」 → 「.zipファイル」
 
-#### 2. 環境変数の設定
+#### 3. 環境変数の設定
 
 「設定」タブ → 「環境変数」で以下を設定：
 
@@ -227,13 +267,12 @@ PRESIGNED_URL_EXPIRY = 3600
 S3_PREFIX = presentations/
 ```
 
-#### 3. 実行設定
+#### 4. Lambdaレイヤーの設定（オプション）
 
-「設定」タブ → 「一般設定」で以下を調整：
-- タイムアウト: 60秒
-- メモリ: 1024MB
+大きな依存関係がある場合、Lambdaレイヤーを使用することでデプロイを効率化できます。
+`lambda-layer-requests`ディレクトリがプロジェクトに含まれています。
 
-#### 4. IAMロールの設定
+#### 5. IAMロールの設定
 
 Lambda関数のIAMロールに以下のポリシーをアタッチ：
 
@@ -264,10 +303,28 @@ Lambda関数のIAMロールに以下のポリシーをアタッチ：
 
 ### 📌 API Gatewayの設定
 
-1. API Gateway（HTTP API）を作成
-2. ルート `/generate` を作成
-3. 統合先にLambda関数を指定
-4. セキュリティ設定（オプション）：AWS IAM認証
+#### PowerPoint生成APIの設定
+
+1. **API Gateway（HTTP API）を作成**
+   - APIタイプ: HTTP API
+   - APIエンドポイントタイプ: Regional
+
+2. **ルート設定**
+   - メソッド: `POST`
+   - パス: `/generate`
+   - 統合先: `lambda-pptx-generator`
+   - 認可: IAM
+
+3. **URL取得APIの設定**
+   - メソッド: `POST`
+   - パス: `/get-url`
+   - 統合先: `lambda-pptx-get_download_url`
+   - 認可: IAM
+
+4. **CORS設定（必要に応じて）**
+   - Access-Control-Allow-Origin: `*` または特定のドメイン
+   - Access-Control-Allow-Headers: `Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token`
+   - Access-Control-Allow-Methods: `OPTIONS,POST`
 
 ---
 

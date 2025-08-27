@@ -23,24 +23,94 @@ AutoSlideGenは、非構造化テキスト（議事録・記事・メモなど�
 
 ## 🏗️ アーキテクチャ
 
+### システム全体構成
+
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────────┐      ┌──────────────────┐
-│   Client    │─────▶│ API Gateway  │─────▶│      Lambda         │─────▶│       S3         │
-│ (Salesforce)│ IAM  │   (HTTP)     │      │(lambda-pptx-generator.py)│   │ presentations/   │
-└─────────────┘      └──────────────┘      └─────────────────────┘      └──────────────────┘
-                                                      │                      ↑
-                                                      ▼                      │
-                                            ┌─────────────────────┐      │
-                                            │   環境変数          │      │
-                                            │ - S3_BUCKET_NAME    │      │
-                                            │ - LOGO_HEADER_URL   │      │
-                                            │ - THEME_COLOR_*     │      │
-                                            └─────────────────────┘      │
-                                                                             │
-┌─────────────┐      ┌──────────────┐      ┌─────────────────────┐      │
-│   Client    │─────▶│ API Gateway  │─────▶│      Lambda         │──────┘
-│             │      │  /get-url    │      │(lambda-pptx-get_download_url.py)│
-└─────────────┘      └──────────────┘      └─────────────────────┘
+                                 🔐 IAM認証
+┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
+│     Client      │────│   API Gateway        │────│      Lambda         │
+│ (Web/Mobile/CLI)│    │   (HTTP/REST API)    │    │     Functions       │
+└─────────────────┘    └──────────────────────┘    └─────────────────────┘
+                                 │                            │
+                       ┌─────────┴─────────┐                  │
+                       ▼                   ▼                  ▼
+        ┌─────────────────────┐  ┌─────────────────────┐   ┌──────────────┐
+        │  POST /generate     │  │  POST /get-url      │   │      S3      │
+        │ PowerPoint生成API   │  │ ダウンロードURL取得   │   │presentations/│
+        └─────────────────────┘  └─────────────────────┘   └──────────────┘
+```
+
+### 詳細フロー
+
+```
+📱 Client Request (PowerPoint生成)
+│
+├─ 🔑 AWS Signature V4 認証
+│   ├─ Access Key ID
+│   ├─ Secret Access Key  
+│   └─ 署名計算
+│
+▼
+🌐 API Gateway (IAM認証)
+│   ├─ CORS処理
+│   ├─ 認証チェック
+│   └─ リクエスト転送
+│
+▼
+⚡ Lambda: autoslidegen-pptx-generator
+│   ├─ slideData解析
+│   ├─ PowerPoint生成 (python-pptx)
+│   ├─ デザイン適用 (環境変数ベース)
+│   └─ S3アップロード
+│
+▼
+📦 S3 Bucket
+│   ├─ ファイル保存: presentations/{uuid}.pptx
+│   └─ 署名付きURL生成 (1時間有効)
+│
+▼
+📱 Client Response
+    ├─ downloadUrl: 署名付きダウンロードURL
+    ├─ s3Key: S3オブジェクトキー
+    └─ message: 処理結果メッセージ
+
+────────────────────────────────────────────────────────
+
+📱 Client Request (URL再取得)
+│
+├─ 🔑 AWS Signature V4 認証
+│
+▼
+🌐 API Gateway (IAM認証)
+│
+▼
+⚡ Lambda: autoslidegen-get-download-url
+│   ├─ fileId/s3Key検証
+│   ├─ S3ファイル存在確認
+│   └─ 新しい署名付きURL生成
+│
+▼
+📱 Client Response
+    ├─ downloadUrl: 新しい署名付きURL
+    └─ expiresIn: 有効期限 (秒)
+```
+
+### 環境設定
+
+```
+┌─────────────────────┐    ┌─────────────────────┐
+│   Lambda環境変数    │    │   ローカル開発環境   │
+├─────────────────────┤    ├─────────────────────┤
+│🔧 必須設定          │    │📁 .env ファイル     │
+│ • S3_BUCKET_NAME    │    │ • 全Lambda環境変数   │
+│ • AWS_REGION        │    │ • AWS認証情報       │
+│                     │    │ • APIエンドポイント │
+│🎨 オプション設定     │    │                     │
+│ • LOGO_HEADER_URL   │    │🧪 テストスクリプト   │
+│ • THEME_COLOR_*     │    │ • test_local.py     │
+│ • FONT_SIZE_*       │    │ • test_api_*.py     │
+│ • SLIDE_WIDTH_PX    │    │                     │
+└─────────────────────┘    └─────────────────────┘
 ```
 
 ---

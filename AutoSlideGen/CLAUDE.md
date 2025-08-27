@@ -243,12 +243,71 @@ python test/test_get_url_local.py
 
 ---
 
+## 📖 **AWS最新ドキュメント確認手順（必須）**
+
+### Context7での最新情報確認
+
+AutoSlideGenでの作業開始時は**必ず**以下の手順で最新のAWS情報を確認すること：
+
+#### 1. AWS Lambda関連
+- **AWS Lambda Python Runtime**: 最新のPython 3.13ランタイム情報
+- **Lambda Environment Variables**: 環境変数の新しい制限や推奨事項
+- **Lambda Packaging**: デプロイパッケージの最新ベストプラクティス
+- **Lambda Layers**: レイヤー使用時の最新ガイドライン
+
+#### 2. API Gateway関連
+- **HTTP API vs REST API**: 最新の推奨事項と機能差異
+- **CORS Configuration**: 最新のCORS設定方法
+- **Lambda Integration**: Lambda統合の最新パターン
+- **Authentication**: IAM認証の最新セキュリティ設定
+
+#### 3. S3関連
+- **Presigned URLs**: 署名付きURLの最新設定方法
+- **S3 Security**: バケットポリシーとIAMの最新ベストプラクティス
+- **S3 Event Triggers**: S3イベント連携の最新機能
+
+#### 4. IAM関連
+- **Lambda Execution Roles**: 最小権限の原則に基づく最新ロール設定
+- **Resource-based Policies**: リソースベースポリシーの最新推奨事項
+
+### Context7確認タイミング
+
+```bash
+# 作業開始時の確認フロー
+1. Context7でAWS最新ドキュメント確認
+   ├── Lambda Python 3.13の最新制約
+   ├── API Gatewayの新機能・変更点  
+   ├── S3署名付きURLの最新仕様
+   └── IAMポリシーの最新ベストプラクティス
+
+2. AutoSlideGen固有制約の確認
+   ├── CLAUDE.md（このファイル）の内容確認
+   ├── .env_exampleでの環境変数確認
+   └── pyproject.tomlでの依存関係確認
+
+3. 作業実行
+   ├── 最新情報に基づく実装
+   ├── セキュリティ要件の遵守
+   └── パフォーマンス最適化の適用
+```
+
+### 🚨 重要な確認項目
+
+- **Python 3.13の新機能・制約**: 型ヒント、パフォーマンス改善
+- **Lambda Cold Start対策**: 最新の初期化最適化手法
+- **API Gateway料金**: HTTP API vs REST APIの最新コスト比較
+- **S3ストレージクラス**: 使用パターンに応じた最適なクラス選択
+- **CloudWatch Logs**: 最新のログ管理とコスト最適化
+
+---
+
 ### 今後のセッション継続時の手順
 
-1. **AutoSlideGen専用設定の確認**
-2. **Lambda関数とローカル環境の動作確認**
-3. **PowerPoint生成ロジックの理解**
-4. **AWS環境設定の確認**
-5. **制約事項の確認と遵守**
+1. **🔍 Context7でAWS最新ドキュメント確認（必須）**
+2. **AutoSlideGen専用設定の確認**
+3. **Lambda関数とローカル環境の動作確認**
+4. **PowerPoint生成ロジックの理解**
+5. **AWS環境設定の確認**
+6. **制約事項の確認と遵守**
 
 これらの制約は**AutoSlideGenプロジェクト専用**であり、**他のプロジェクトには適用しない**こと。

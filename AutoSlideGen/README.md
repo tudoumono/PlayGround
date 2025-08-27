@@ -82,36 +82,42 @@ AutoSlideGen/
 
 ### 1. ローカル開発環境のセットアップ
 
-```powershell
+```bash
 # リポジトリをクローン
 git clone <repository-url>
 cd AutoSlideGen
 
-# Python仮想環境を作成（Python 3.13以上）
+# Python 3.13以上が必要です
+python --version  # 3.13以上であることを確認
+
+# uvを使用（推奨）
+uv sync --extra dev
+
+# または通常のvenv + pipを使用
 python -m venv .venv
-
-# 仮想環境を有効化 (PowerShell)
-.venv\Scripts\activate.ps1
-
-# 依存関係をインストール（uvを使用）
-uv pip install -r pyproject.toml --extra dev
-
-# または pipを使用
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate.ps1  # Windows PowerShell
 pip install python-pptx requests pillow python-dotenv boto3
 
 # 環境変数ファイルを作成
-copy .env_example .env
+cp .env_example .env
 # .envファイルを編集して必要な値を設定
 ```
 
 ### 2. ローカルでのテスト実行
 
-```powershell
-# 仮想環境が有効化されていることを確認
-# テストスクリプトを実行
-python test_local.py
+```bash
+# Python環境が適切に設定されていることを確認
+python --version
+
+# PowerPoint生成のテスト
+python test/test_local.py
+
+# URL取得機能のテスト
+python test/test_get_url_local.py
 
 # 生成されたファイルは output/ ディレクトリに保存されます
+ls output/  # 生成されたPowerPointファイルを確認
 ```
 
 ---
@@ -120,217 +126,74 @@ python test_local.py
 
 ‼️ **重要**: 詳細なデプロイ手順は [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) を参照してください。
 
+### 🚀 クイックデプロイ概要
+
+1. **パッケージ作成**: `lambda_generate_package.zip` と `lambda_geturl_package.zip` を作成
+2. **Lambda関数作成**: 2つのLambda関数をAWSコンソールで作成
+3. **環境変数設定**: 必須とオプションの環境変数を設定
+4. **API Gateway設定**: `/generate` と `/get-url` エンドポイントを作成
+5. **テスト実行**: エンドツーエンドでの動作確認
+
 ### 📌 デプロイ用パッケージの作成方法
 
-#### 方法1: PowerShellを使用（Windows）
-
-```powershell
-# 1. 作業ディレクトリをクリーンアップ
-Remove-Item -Path "./package" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "./lambda_package.zip" -Force -ErrorAction SilentlyContinue
-
-# 2. パッケージディレクトリを作成
-New-Item -ItemType Directory -Path "./package"
-
-# 3. Lambda用の依存関係をインストール
-# （boto3はLambda環境に含まれているため不要）
-pip install --target ./package python-pptx requests pillow
-
-# 4. 依存関係をzipファイルに圧縮
-cd package
-Compress-Archive -Path ./* -DestinationPath ../lambda_package.zip
-cd ..
-
-# 5. Lambda関数本体を追加
-Compress-Archive -Update -Path lambda-pptx-generator.py -DestinationPath lambda_package.zip
-
-# 6. ファイルサイズを確認（50MB以下であることを確認）
-$size = (Get-Item lambda_package.zip).Length / 1MB
-Write-Host "Package size: $([math]::Round($size, 2)) MB"
-```
-
-#### 方法2: Bashを使用（Linux/Mac/WSL）
+#### PowerPoint生成Lambda用パッケージ
 
 ```bash
-# 1. 作業ディレクトリをクリーンアップ
-rm -rf package/
-rm -f lambda_package.zip
+# 1. パッケージ作成スクリプト
+cd AutoSlideGen
 
-# 2. パッケージディレクトリを作成
+# 2. 依存関係をインストール
 mkdir package
+uv pip install --target ./package python-pptx requests pillow
 
-# 3. Lambda用の依存関係をインストール
-pip install --target ./package python-pptx requests pillow
+# 3. zipパッケージを作成
+cd package && zip -r ../lambda_generate_package.zip . && cd ..
+zip -u lambda_generate_package.zip lambda-pptx-generator.py
 
-# 4. zipファイルを作成
-cd package
-zip -r ../lambda_package.zip .
-cd ..
-
-# 5. Lambda関数本体を追加
-zip -u lambda_package.zip lambda-pptx-generator.py
-
-# 6. ファイルサイズを確認
-ls -lh lambda_package.zip
+# 4. パッケージサイズを確認（50MB以下であることを確認）
+ls -lh lambda_generate_package.zip
 ```
+
+#### URL取得Lambda用パッケージ
+
+```bash
+# 軽量パッケージ（外部依存関係なし）
+zip lambda_geturl_package.zip lambda-pptx-get_download_url.py
+```
+
+> 💡 **ヒント**: 詳細な手順とトラブルシューティングは [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) を参照してください。
 
 ### 📌 Lambda関数の作成と設定
 
-#### 1. Lambda関数の構成詳細
+#### AWS Lambda関数の設定例
 
-##### **PowerPoint生成用Lambda関数**
+| 設定項目 | PowerPoint生成Lambda | URL取得Lambda |
+|----------|----------------------|---------------|
+| **関数名** | `autoslidegen-pptx-generator` | `autoslidegen-get-download-url` |
+| **ランタイム** | Python 3.13 | Python 3.13 |
+| **メモリ** | 1024MB | 256MB |
+| **タイムアウト** | 60秒 | 10秒 |
+| **パッケージ** | `lambda_generate_package.zip` | `lambda_geturl_package.zip` |
 
-| 設定項目 | 設定値 |
-|----------|--------|
-| **ファイル** | `lambda-pptx-generator.py` |
-| **Lambda関数名** | `lambda-pptx-generator` |
-| **パッケージタイプ** | Zip |
-| **ランタイム** | Python 3.13 |
-| **メモリ** | 1024MB |
-| **タイムアウト** | 60秒 |
-| **アーキテクチャ** | x86_64 |
-| **トリガー** | API Gateway |
+#### API Gateway エンドポイント例
 
-**API Gateway設定:**
-- **エンドポイント**: `POST /generate`
-- **認可**: IAM
-- **プロトコル**: HTTP
-- **APIエンドポイントタイプ**: Regional
+| エンドポイント | メソッド | 統合先 | 機能 |
+|---------------|---------|--------|------|
+| `/generate` | POST | PowerPoint生成Lambda | スライドデータからPowerPoint生成 |
+| `/get-url` | POST | URL取得Lambda | S3ファイルの署名付きURL取得 |
 
-##### **URL取得用Lambda関数**
+> ⚠️ **重要**: 実際の設定値は環境に合わせて調整してください。詳細は [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) を参照。
 
-| 設定項目 | 設定値 |
-|----------|--------|
-| **ファイル** | `lambda-pptx-get_download_url.py` |
-| **Lambda関数名** | `lambda-pptx-get_download_url` |
-| **パッケージタイプ** | Zip |
-| **ランタイム** | Python 3.13 |
-| **メモリ** | 1024MB |
-| **タイムアウト** | 10秒 |
-| **アーキテクチャ** | x86_64 |
-| **トリガー** | API Gateway |
+#### 必須環境変数
 
-**API Gateway設定:**
-- **エンドポイント**: `POST /get-url`
-- **認可**: IAM  
-- **プロトコル**: HTTP
-- **APIエンドポイントタイプ**: Regional
-
-> ⚠️ **注意**: 上記の設定値は推奨値です。実際の環境に合わせて自由に変更してください。
-
-#### 2. Lambda関数の作成手順
-
-1. AWS Lambdaコンソールで新しい関数を作成
-   - 上記の表に従って各設定を行う
-
-2. 作成した`lambda_package.zip`をアップロード
-   - 「コード」タブ → 「アップロード元」 → 「.zipファイル」
-
-#### 3. 環境変数の設定
-
-「設定」タブ → 「環境変数」で以下を設定：
-
-**必須環境変数:**
-```
-S3_BUCKET_NAME = your-presentation-bucket
+```bash
+# 両Lambda関数で共通
+S3_BUCKET_NAME = "your-presentation-bucket"
+S3_PREFIX = "presentations/"
+AWS_REGION = "ap-northeast-1"
 ```
 
-**オプション環境変数（デザインカスタマイズ）:**
-```
-# ブランディング
-LOGO_HEADER_URL = https://your-logo-url.com/logo.png
-LOGO_CLOSING_URL = https://your-logo-url.com/logo.png
-FOOTER_ORGANIZATION_NAME = Your Company Name
-
-# フォント設定
-DEFAULT_FONT_FAMILY = Arial
-FONT_SIZE_TITLE = 45
-FONT_SIZE_SECTION = 38
-FONT_SIZE_CONTENT_TITLE = 28
-FONT_SIZE_SUBHEAD = 18
-FONT_SIZE_BODY = 14
-FONT_SIZE_FOOTER = 9
-
-# カラー設定（#を除いた6桁の16進数）
-THEME_COLOR_PRIMARY = 4285F4
-THEME_COLOR_RED = EA4335
-THEME_COLOR_YELLOW = FBBC04
-THEME_COLOR_GREEN = 34A853
-TEXT_PRIMARY_COLOR = 333333
-TEXT_WHITE_COLOR = FFFFFF
-BACKGROUND_WHITE_COLOR = FFFFFF
-BACKGROUND_GRAY_COLOR = F8F9FA
-CARD_BG_COLOR = FFFFFF
-CARD_BORDER_COLOR = DADCE0
-
-# スライドサイズ
-SLIDE_WIDTH_PX = 960
-SLIDE_HEIGHT_PX = 540
-
-# セキュリティ設定
-ALLOWED_ORIGINS = *
-PRESIGNED_URL_EXPIRY = 3600
-S3_PREFIX = presentations/
-```
-
-#### 4. Lambdaレイヤーの設定（オプション）
-
-大きな依存関係がある場合、Lambdaレイヤーを使用することでデプロイを効率化できます。
-`lambda-layer-requests`ディレクトリがプロジェクトに含まれています。
-
-#### 5. IAMロールの設定
-
-Lambda関数のIAMロールに以下のポリシーをアタッチ：
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject"
-      ],
-      "Resource": "arn:aws:s3:::your-presentation-bucket/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*"
-    }
-  ]
-}
-```
-
-### 📌 API Gatewayの設定
-
-#### PowerPoint生成APIの設定
-
-1. **API Gateway（HTTP API）を作成**
-   - APIタイプ: HTTP API
-   - APIエンドポイントタイプ: Regional
-
-2. **ルート設定**
-   - メソッド: `POST`
-   - パス: `/generate`
-   - 統合先: `lambda-pptx-generator`
-   - 認可: IAM
-
-3. **URL取得APIの設定**
-   - メソッド: `POST`
-   - パス: `/get-url`
-   - 統合先: `lambda-pptx-get_download_url`
-   - 認可: IAM
-
-4. **CORS設定（必要に応じて）**
-   - Access-Control-Allow-Origin: `*` または特定のドメイン
-   - Access-Control-Allow-Headers: `Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token`
-   - Access-Control-Allow-Methods: `OPTIONS,POST`
+> 📖 **詳細設定**: オプション環境変数の詳細は [`.env_example`](./.env_example) と [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) を参照してください。
 
 ---
 
@@ -386,65 +249,94 @@ result = response.json()
 print(f"New Download URL: {result['downloadUrl']}")
 ```
 
-### ローカルでの利用
+### ローカル環境での利用
 
-#### 1. PowerPoint生成
+#### テストスクリプトを使用（推奨）
 
-**注意**: ファイル名にハイフンが含まれるため、直接インポートできません。`importlib`を使用するか、テストスクリプトを使用してください。
+```bash
+# PowerPoint生成のテスト
+python test/test_local.py
 
-```python
-import importlib.util
-import json
-
-# lambda-pptx-generator.pyをロード
-spec = importlib.util.spec_from_file_location(
-    "lambda_pptx_generator",
-    "lambda-pptx-generator.py"
-)
-lambda_pptx_generator = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lambda_pptx_generator)
-lambda_handler = lambda_pptx_generator.lambda_handler
-
-# テスト用イベントを作成
-event = {
-    'body': json.dumps({
-        'slideData': str(slide_data)
-    })
-}
-
-# Lambda関数を実行
-response = lambda_handler(event, None)
-result = json.loads(response['body'])
-print(f"Local file path: {result['localPath']}")
-file_id = result['s3Key']  # ローカルではファイル名
+# URL取得のテスト
+python test/test_get_url_local.py
 ```
 
-#### 2. URL再取得（ローカルファイルパス）
+### Lambda関数デプロイ後のテスト
+
+#### 📋 テスト準備
+
+```bash
+# テスト用環境変数ファイルを作成
+cp .env.test_example .env.test
+
+# .env.testファイルを編集してAPIエンドポイントを設定
+# API_GENERATE_ENDPOINT_URL="https://your-api-id.execute-api.region.amazonaws.com/stage/generate"
+# API_GET_URL_ENDPOINT_URL="https://your-api-id.execute-api.region.amazonaws.com/stage/get-url"
+```
+
+#### 🧪 APIテスト実行
+
+**簡易テスト（推奨）**
+```bash
+# 基本的な動作確認（認証なし）
+python test/test_api_simple.py
+```
+
+**完全テストスイート**
+```bash
+# 包括的なテスト（認証設定含む）
+python test/test_api_endpoints.py
+```
+
+#### 🔐 認証設定
+
+**.env.testで認証タイプを設定:**
+
+```bash
+# 認証なし（開発環境）
+TEST_AUTH_TYPE="none"
+
+# IAM認証（本番環境推奨）
+TEST_AUTH_TYPE="iam"
+AWS_ACCESS_KEY_ID="your-access-key"
+AWS_SECRET_ACCESS_KEY="your-secret-key"
+
+# APIキー認証
+TEST_AUTH_TYPE="api_key"
+API_KEY="your-api-key"
+```
+
+#### Pythonコードから直接利用
 
 ```python
 import importlib.util
 import json
 
-# lambda-pptx-get_download_url.pyをロード
-spec = importlib.util.spec_from_file_location(
-    "lambda_get_download_url",
-    "lambda-pptx-get_download_url.py"
+# Lambda関数をローカルで実行
+def load_lambda_function(file_path, module_name):
+    """ハイフン付きファイル名のLambda関数をロード"""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.lambda_handler
+
+# PowerPoint生成
+lambda_handler = load_lambda_function(
+    "lambda-pptx-generator.py", 
+    "lambda_pptx_generator"
 )
-lambda_get_download_url = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lambda_get_download_url)
-lambda_handler = lambda_get_download_url.lambda_handler
 
-# URL取得用イベント
-event = {
-    'body': json.dumps({
-        'fileId': file_id  # または 's3Key': file_name
-    })
-}
+# スライドデータの例
+slide_data = [
+    {"type": "title", "title": "サンプルプレゼンテーション", "date": "2025年1月"},
+    {"type": "content", "title": "アジェンダ", "points": ["項目1", "項目2", "項目3"]}
+]
 
-# Lambda関数を実行
+event = {"body": json.dumps({"slideData": str(slide_data)})}
 response = lambda_handler(event, None)
 result = json.loads(response['body'])
-print(f"Local file path: {result['localPath']}")
+
+print(f"✅ 生成完了: {result.get('localPath', result.get('downloadUrl'))}")
 ```
 
 ---
@@ -469,32 +361,79 @@ print(f"Local file path: {result['localPath']}")
 
 ## 🐛 トラブルシューティング
 
-### ローカル環境
+### よくある問題と解決方法
+
+#### ローカル環境
 
 | 問題 | 解決方法 |
 |------|----------|
-| `ModuleNotFoundError: python-dotenv` | `pip install python-dotenv` を実行 |
-| `.env`ファイルが読み込まれない | ファイルパスと環境変数名を確認 |
-| 出力ファイルが見つからない | `output/`ディレクトリを確認 |
+| `ModuleNotFoundError: python-dotenv` | `uv add python-dotenv` または `pip install python-dotenv` |
+| `.env`ファイルが読み込まれない | `.env_example`をコピーして`.env`を作成し、必要な値を設定 |
+| `output/`ディレクトリが見つからない | 自動作成されない場合は `mkdir output` で作成 |
+| Python 3.13エラー | `python --version` で3.13以上を確認、必要に応じて更新 |
 
-### Lambda環境
+#### AWS Lambda環境
 
 | 問題 | 解決方法 |
 |------|----------|
-| タイムアウトエラー | タイムアウトを60秒以上に延長 |
-| メモリ不足エラー | メモリを1024MB以上に増加 |
-| S3アクセスエラー | IAMロールの権限を確認 |
-| `ModuleNotFoundError` | デプロイパッケージに依存関係が含まれているか確認 |
-| 環境変数エラー | Lambda設定で`S3_BUCKET_NAME`が設定されているか確認 |
+| **タイムアウトエラー** | PowerPoint生成Lambdaのタイムアウトを60秒以上に設定 |
+| **メモリ不足エラー** | PowerPoint生成Lambdaのメモリを1024MB以上に増加 |
+| **パッケージサイズエラー** | パッケージが50MB以下か確認、超過時はS3経由デプロイを使用 |
+| **S3アクセスエラー** | IAMロールにS3の`PutObject`と`GetObject`権限が付与されているか確認 |
+| **環境変数エラー** | `S3_BUCKET_NAME`など必須環境変数が設定されているか確認 |
+
+#### API Gateway
+
+| 問題 | 解決方法 |
+|------|----------|
+| **CORSエラー** | API GatewayでCORSを正しく設定、`OPTIONS`メソッドも有効化 |
+| **認証エラー** | IAM認証の場合、適切な認証情報をリクエストヘッダーに含める |
+| **404エラー** | エンドポイントパス（`/generate`, `/get-url`）が正しいか確認 |
+
+> 🔍 **詳細デバッグ**: [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) のデバッグセクションを参照してください。
 
 ---
 
-## 📚 参考資料
+## 🧪 テストスクリプト一覧
 
-- [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
-- [API Gateway HTTP API](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html)
-- [python-pptx Documentation](https://python-pptx.readthedocs.io/)
-- [元記事](https://note.com/majin_108/n/n39235bcacbfc)
+| テストファイル | 用途 | 実行環境 |
+|---------------|------|----------|
+| `test/test_local.py` | ローカル環境でのLambda関数テスト | ローカル |
+| `test/test_get_url_local.py` | ローカル環境でのURL取得テスト | ローカル |
+| `test/test_api_simple.py` | Lambda関数の基本APIテスト | デプロイ後 |
+| `test/test_api_endpoints.py` | Lambda関数の包括的APIテスト | デプロイ後 |
+
+### テスト実行例
+
+```bash
+# ローカル開発時
+python test/test_local.py
+python test/test_get_url_local.py
+
+# Lambda関数デプロイ後
+python test/test_api_simple.py        # 基本テスト
+python test/test_api_endpoints.py     # 詳細テスト
+```
+
+---
+
+## 📚 参考資料・関連リンク
+
+### 技術ドキュメント
+- [🐍 python-pptx Documentation](https://python-pptx.readthedocs.io/) - PowerPoint操作ライブラリ
+- [⚡ uv Documentation](https://docs.astral.sh/uv/) - 高速Pythonパッケージマネージャー
+- [🔧 AWS Lambda Python Runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html)
+
+### AWS サービス
+- [🚀 AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
+- [🌐 API Gateway HTTP API](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html)
+- [📦 Amazon S3 Documentation](https://docs.aws.amazon.com/s3/)
+
+### プロジェクト固有ドキュメント
+- [`DEPLOY_GUIDE.md`](./DEPLOY_GUIDE.md) - 詳細デプロイ手順とトラブルシューティング
+- [`CLAUDE.md`](./CLAUDE.md) - AutoSlideGen用Claude Code設定
+- [`.env_example`](./.env_example) - 環境変数設定例
+- [`.env.test_example`](./.env.test_example) - APIテスト用環境変数設定例
 
 ---
 

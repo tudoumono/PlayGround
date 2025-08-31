@@ -1,0 +1,21 @@
+{
+    "similarity_thresholds": {
+        "high": 80,
+        "medium": 50
+    },
+    "colors": {
+        "high": [255, 255, 0],
+        "medium": [0, 176, 240],
+        "low": [255, 0, 0]
+    },
+    "ai_settings": {
+        "api_key": "YOUR_API_KEY",
+        "model": "gpt-3.5-turbo",
+        "timeout": 10,
+        "max_retries": 3
+    },
+    "excel_settings": {
+        "visible": true,
+        "display_alerts": false
+    }
+}

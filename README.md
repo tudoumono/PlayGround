@@ -7,7 +7,7 @@ PlayGround は、複数の小規模プロジェクト（アプリ空間）を並
   - 概要: Googleスライド風の美しい PowerPoint（PPTX）を自動生成。Lambda/ローカル双方で動作。
   - 主要サブフォルダ: `AutoSlideGen/lambda-layer`（AWS Lambda レイヤーのビルド資材）
   - 詳細: AutoSlideGen/README.md
-  - 参考: [スライド自動作成 📝](https://github.com/tudoumono/PlayGround/tree/main/%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%89%E8%87%AA%E5%8B%95%E4%BD%9C%E6%88%90)
+  - 参考: [AutoSlideGen ディレクトリ](https://github.com/tudoumono/PlayGround/tree/main/AutoSlideGen)
 
 - Excel — Excel比較／自動転記ツール群
   - 概要: Excelブック全体比較、範囲比較（セルずれ耐性）、構造処理など。GUI（Tkinter）＋ Win32 COM を活用。

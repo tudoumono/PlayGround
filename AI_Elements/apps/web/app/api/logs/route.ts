@@ -4,7 +4,7 @@
  * - POST: ログ追加 { level, tag, message }
  * - DELETE: クリア
  */
-import { appendLog, clearLogs, getLogs, type LogLevel, getLogFileInfo, deleteLogFile } from '@/apps/web/lib/logs';
+import { appendLog, clearLogs, getLogs, type LogLevel, getLogFileInfo, deleteLogFile } from '../../../lib/logs';
 
 export const runtime = 'nodejs';
 

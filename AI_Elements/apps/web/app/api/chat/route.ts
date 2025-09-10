@@ -8,7 +8,7 @@
  */
 import { streamText, type UIMessage, convertToModelMessages } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
-import { appendLog } from '@/apps/web/lib/logs';
+import { appendLog } from '../../../lib/logs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -34,9 +34,9 @@ export async function POST(req: Request): Promise<Response> {
     ? streamText({ model: openai('gpt-4o'), messages: convertToModelMessages(body.messages as UIMessage[]) })
     : streamText({ model: openai('gpt-4o'), prompt: String(body?.prompt ?? '') });
 
-  // 生テキストのストリーミング応答
-  return result.toTextStreamResponse({
+  // UIメッセージストリームで返却（useChat 連携向け）
+  return result.toUIMessageStreamResponse({
     onError: (err) => appendLog('error', 'chat', `stream error: ${(err as Error).message}`),
-    onFinal: () => appendLog('info', 'chat', 'stream done'),
+    onFinish: () => appendLog('info', 'chat', 'stream done'),
   });
 }

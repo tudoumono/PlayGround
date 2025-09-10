@@ -9,7 +9,8 @@
 ## アーキテクチャ概要
 - UI: AI Elements（Chat/Message List/Composer/右ペインTabs）。mckaywrigley/chatbot-uiのレイアウト/UXを参考に再実装。
 - サーバ: AI SDK（`ai` + `@ai-sdk/openai`）でストリーミング処理を実装。
-  - Next.js App RouterのRoute Handler（`/app/api/chat/route.ts`）で`streamText`を用い、`toTextStreamResponse()`でフロントへストリーム返却。
+  - Next.js App RouterのRoute Handler（`/app/api/chat/route.ts`）で`streamText`を用い、既定は`toUIMessageStreamResponse()`で返却（UIメッセージ形式）。
+  - フロントは`@ai-sdk/react`の`useChat`で接続（UI Message Stream）。
   - 既存のOpenAI Responses API直結のSSE実装（`src/server/responsesStream.ts`）は代替手段として保持。
 - ツール: OpenAI `web_search`、OpenAI Vector Store（File Search）、OpenAI Code Interpreter（クラウド側）。
 - 永続化: SQLite（better-sqlite3）で会話/設定/ペルソナ/Vector紐付け。API鍵はOSキーストア（keytar）。
@@ -60,7 +61,7 @@
 - ツール切替: `web_search`/`vector_store` ON/OFFが即時反映、無効時は呼び出し不可。
 - Vector Store: L1/L2/L3の検索優先が機能。ファイル一覧に `filename`/容量/状態が表示、追加/削除/再インデックス可。
 - ペルソナ: CRUDと適用、許可ツールの制御、JSON入出力。
-- 会話継続: Next.jsの`/api/chat`経由で`streamText`のテキストストリームをUIに逐次反映（切断時の再接続/重複防止）。
+- 会話継続: Next.jsの`/api/chat`経由で`streamText`のUIメッセージストリームを逐次反映（切断時の再接続/重複防止）。
 - APIキー検証: 管理画面で実行し結果種別を明示。
 
 ## 次アクション（WBS）

@@ -2,7 +2,7 @@
  * ログファイルのダウンロードAPI
  * - 存在しない場合は404
  */
-import { getLogFileInfo } from '@/apps/web/lib/logs';
+import { getLogFileInfo } from '../../../../lib/logs';
 import { createReadStream } from 'node:fs';
 
 export const runtime = 'nodejs';
@@ -28,4 +28,3 @@ export async function GET(): Promise<Response> {
     },
   });
 }
-

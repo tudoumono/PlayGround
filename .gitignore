@@ -2,3 +2,36 @@
 .venv
 # デフォルトのmain.py
 main.py
+
+AutoSlideGen/python
+lambda-layer/python-optimized
+lambda-layer/python
+lambda-layer/python-exact
+
+# 生成物（レイヤーZIP・成果物）
+lambda-layer/*.zip
+*.pptx
+
+# 秘匿情報（例外: *.example / *.sample は許可）
+**/.env
+**/.env.*
+!**/.env*.example
+!**/.env*.sample
+
+# Pythonキャッシュ/ビルド
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage*
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,24 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+# まったく同じ環境を使用
+WORKDIR /opt
+
+# requirements.txtをコピー
+COPY requirements.txt .
+
+# 正確にLambda環境と同じバージョンで依存関係をインストール
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt -t python/
+
+# Python環境の詳細確認と依存関係テスト
+RUN python -c "import sys; print(f'Python version: {sys.version}'); print(f'Platform: {sys.platform}')"
+
+# lxmlの詳細テスト
+RUN python -c "import sys; sys.path.insert(0, 'python'); import lxml; print(f'lxml version: {lxml.__version__}'); from lxml import etree; print('✅ lxml.etree import successful in EXACT Lambda environment'); root = etree.Element('test'); etree.SubElement(root, 'child').text = 'Hello'; xml_str = etree.tostring(root, encoding='unicode'); print(f'XML test: {xml_str}')"
+
+# python-pptxテスト  
+RUN python -c "import sys; sys.path.insert(0, 'python'); from pptx import Presentation; print('✅ python-pptx import successful'); prs = Presentation(); slide_layout = prs.slide_layouts[0]; slide = prs.slides.add_slide(slide_layout); print('✅ PowerPoint creation test successful')"
+
+# ファイル権限の確認
+RUN ls -la python/
+RUN ls -la python/lxml/ | head -5

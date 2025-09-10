@@ -7,6 +7,8 @@
 // importを使うと tsc-alias が誤って相対に書き換える場合があるため、ここは require を使用
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { app, BrowserWindow, session } = require('electron');
+import type { OnBeforeRequestListenerDetails, CallbackResponse } from 'electron';
+import path from 'node:path';
 import { bootstrap } from '@/server/bootstrap';
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
@@ -23,8 +25,14 @@ function createWindow() {
     },
   });
 
-  // NOTE: 後でNext.jsのURLやローカルファイルをロード
-  win.loadURL(process.env.APP_START_URL || 'about:blank');
+  // NOTE: Next.jsのURLがあればそれを、なければビルド済み静的UIをロード
+  const startUrl = process.env.APP_START_URL;
+  if (startUrl) {
+    win.loadURL(startUrl);
+  } else {
+    const uiFile = path.resolve(__dirname, '../dist/ui/index.html');
+    win.loadFile(uiFile).catch(() => win.loadURL('about:blank'));
+  }
 }
 
 app.whenReady().then(async () => {
@@ -32,10 +40,15 @@ app.whenReady().then(async () => {
   bootstrap();
 
   // 会社プロファイル時に外部CSPや外部送信をさらに制限したい場合はここで`session`にルールを設定
-  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-    // 例: file:// と http(s):// のみ許可
-    callback({ cancel: false });
-  });
+  session.defaultSession.webRequest.onBeforeRequest(
+    (
+      _details: OnBeforeRequestListenerDetails,
+      callback: (response: CallbackResponse) => void,
+    ) => {
+      // 例: ここでホワイトリスト制御などを行う。現状は全て許可。
+      callback({ cancel: false });
+    },
+  );
 
   createWindow();
 

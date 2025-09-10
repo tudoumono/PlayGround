@@ -41,10 +41,8 @@ Win32comを使用して昨年度と今年度のExcelファイル間で質問と�
 
 ### 依存関係
 - **pywin32**: Windows COM操作（Excel自動化）
-- **openai**: AI機能（GPT-3.5-turbo）
+- **openai**: AI機能（任意、APIキー設定時のみ有効）
 - **python-dotenv**: 環境変数管理
-- **openpyxl**: Excel読み書き
-- **pandas**: データ処理
 - **tkinter**: GUI（ファイル選択、進捗表示）
 
 ### 類似度計算
@@ -56,13 +54,31 @@ Win32comを使用して昨年度と今年度のExcelファイル間で質問と�
 - 機密ファイルのバージョン管理除外
 - pathlib使用によるクロスプラットフォーム対応
 
-## 使用方法
+## クイックスタート（uv 推奨）
 
-1. **実行**: `python main.py`
-2. **ファイル選択**: 昨年度・今年度のExcelファイルを順次選択
-3. **範囲選択**: 質問欄・回答欄の範囲を指定
-4. **処理実行**: 自動比較・転記処理を開始
-5. **結果確認**: 色分け表示とコメントで結果を確認
+```bash
+cd Excel
+uv venv && uv sync
+# もしくは: uv pip install -r requirements.txt
+```
+
+### 実行方法（エントリポイント別）
+- ブック全体比較（意味的マッチング対応）
+  - `uv run python excel_book_comparator.py`
+- ブック全体比較（セルずれ対応・コピー機能付き）
+  - `uv run python excel_book_comparator_copy.py`
+- 範囲比較（シンプル）
+  - `uv run python simple_range_comparator.py`
+- 範囲比較（スマート）
+  - `uv run python smart_range_comparator.py`
+- 汎用構造処理
+  - `uv run python generic_structure_processor.py`
+
+共通の操作フロー
+1. **ファイル選択**: 昨年度・今年度のExcelファイルを順次選択
+2. **範囲選択**: 質問欄・回答欄の範囲を指定
+3. **処理実行**: 自動比較・転記処理を開始
+4. **結果確認**: 色分け表示とコメントで結果を確認
 
 ## 出力結果
 
@@ -76,6 +92,8 @@ Win32comを使用して昨年度と今年度のExcelファイル間で質問と�
 - 実行ログ: `logs/excel_processor_YYYYMMDD_HHMMSS.log`
 - エラーログ: `logs/errors_YYYYMMDD_HHMMSS.log`
 - 統計情報: `logs/statistics_YYYYMMDD_HHMMSS.json`
+
+`logs/` が存在しない場合は `mkdir logs` で作成してください。
 
 ## 設定カスタマイズ
 

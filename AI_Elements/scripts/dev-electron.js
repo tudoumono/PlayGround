@@ -5,17 +5,31 @@
  */
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
 
 function bin(cmd) {
   const ext = process.platform === 'win32' ? '.cmd' : '';
   return path.resolve(__dirname, '..', 'node_modules', '.bin', cmd + ext);
 }
 
+function spawnCmd(binPath, args, opts) {
+  const isWin = process.platform === 'win32';
+  if (isWin) {
+    // Windowsでの EINVAL 回避: cmd.exe 経由で起動
+    const quoted = /\s/.test(binPath) ? `"${binPath}"` : binPath;
+    return spawn('cmd.exe', ['/c', quoted, ...args], opts);
+  }
+  return spawn(binPath, args, opts);
+}
+
 const NEXT_PORT = process.env.PORT || '3000';
 const APP_URL = `http://localhost:${NEXT_PORT}`;
 
 const nextBin = bin('next');
-const next = spawn(nextBin, ['dev', 'apps/web', '-p', NEXT_PORT], {
+if (!fs.existsSync(nextBin)) {
+  console.error('[dev-electron] next bin not found:', nextBin);
+}
+const next = spawnCmd(nextBin, ['dev', 'apps/web', '-p', NEXT_PORT], {
   stdio: 'inherit',
   env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
 });
@@ -23,7 +37,10 @@ const next = spawn(nextBin, ['dev', 'apps/web', '-p', NEXT_PORT], {
 setTimeout(() => {
   const env = { ...process.env, APP_START_URL: APP_URL };
   const electronBin = bin('electron');
-  const electron = spawn(electronBin, ['--no-sandbox', '.'], { stdio: 'inherit', env });
+  if (!fs.existsSync(electronBin)) {
+    console.error('[dev-electron] electron bin not found:', electronBin);
+  }
+  const electron = spawnCmd(electronBin, ['--no-sandbox', '.'], { stdio: 'inherit', env });
   electron.on('exit', (code) => {
     next.kill('SIGTERM');
     process.exit(code ?? 0);

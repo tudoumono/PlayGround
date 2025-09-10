@@ -39,5 +39,13 @@ PlayGround は、複数の小規模プロジェクト（アプリ空間）を並
 - プロンプト分離: コードはテンプレート化し、`slide_data` のみを生成AIが担当。
 - API的設計: `slide_data` を引数に渡す関数を用意し、外部からデータ投入で PPTX を生成可能。
 
+## Excel メモ（背景）
+- 目的: 昨年度⇔今年度のブックを比較し、質問に対する回答を自動転記。セルずれや範囲差を考慮した比較パターンを用意。
+- 技術: Windows の Excel を COM（pywin32）で操作。GUI は Tkinter でファイル/範囲選択を支援。
+- マッチング: `difflib.SequenceMatcher` による文字列類似度。閾値に応じて色分け（例: 高=黄/中=青/低=赤）。
+- エントリポイント例: `excel_book_comparator.py`（意味的マッチング）、`smart_range_comparator.py`（範囲比較）ほか。
+- AI補助（任意）: `.env` または `config.json` の API キー設定がある場合に OpenAI を利用して不足回答を生成。
+- ログ: `logs/` に実行ログ/統計を保存（存在しない場合は作成）。詳細は Excel/README.md を参照。
+
 ## 参考資料
 - 記事: [【神回】Googleスライドが一瞬で完成する"奇跡"のプロンプト教えます](https://note.com/majin_108/n/n39235bcacbfc)

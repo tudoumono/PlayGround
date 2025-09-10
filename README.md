@@ -48,4 +48,18 @@ PlayGround は、複数の小規模プロジェクト（アプリ空間）を並
 - マッチング: `difflib.SequenceMatcher` による文字列類似度。閾値に応じて色分け（例: 高=黄/中=青/低=赤）。
 - エントリポイント例: `excel_book_comparator.py`（意味的マッチング）、`smart_range_comparator.py`（範囲比較）ほか。
 - AI補助（任意）: `.env` または `config.json` の API キー設定がある場合に OpenAI を利用して不足回答を生成。
-- ログ: `logs/` に実行ログ/統計を保存（存在しない場合は作成）。詳細は Excel/README.md を参照。
+  - ログ: `logs/` に実行ログ/統計を保存（存在しない場合は作成）。詳細は Excel/README.md を参照。
+
+## MCP サーバー運用（プロジェクト単位）
+- 各プロジェクトに専用の MCP 起動スクリプトと設定を配置しました。
+  - `AutoSlideGen/scripts/cipher_mcp.sh`（存在すれば `AutoSlideGen/.env` を読み込み）
+  - `Excel/scripts/cipher_mcp.sh`（存在すれば `Excel/.env` を読み込み）
+  - 設定テンプレート: `AutoSlideGen/config.toml`, `Excel/config.toml`
+
+- Git からの除外
+  - Cipher のセッション DB などのローカルデータはリポジトリ全体で除外します: `data/`, `**/data/`, `**/cipher-sessions.db*`
+
+- Codex CLI への登録例（推奨）
+  - name: `cipher_autoslidegen`, command: `bash -lc /root/mywork/PlayGround/AutoSlideGen/scripts/cipher_mcp.sh`
+  - name: `cipher_excel`, command: `bash -lc /root/mywork/PlayGround/Excel/scripts/cipher_mcp.sh`
+  - 旧 `cipher_playground` の登録がある場合は削除してください（二重起動防止）。

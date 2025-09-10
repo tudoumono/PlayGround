@@ -1,0 +1,13 @@
+# AutoSlideGen project configuration
+
+[project]
+name = "AutoSlideGen"
+
+[api]
+# Fill with your deployed endpoints or local URLs.
+# Example:
+# generate_endpoint_url = "http://localhost:8000/generate"
+# get_url_endpoint_url = "http://localhost:8000/get-url"
+generate_endpoint_url = ""
+get_url_endpoint_url = ""
+

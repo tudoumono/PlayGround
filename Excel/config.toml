@@ -1,0 +1,8 @@
+# Excel project configuration
+
+[project]
+name = "Excel"
+
+[settings]
+# Put Excel-specific settings here as needed.
+

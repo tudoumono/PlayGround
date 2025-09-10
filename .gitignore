@@ -37,3 +37,9 @@ htmlcov/
 Thumbs.db
 .idea/
 .vscode/
+
+# ローカルデータ（CipherセッションDBなど、Git管理不要）
+# ルート直下および各PJ配下の data/ を除外
+data/
+**/data/
+**/cipher-sessions.db*

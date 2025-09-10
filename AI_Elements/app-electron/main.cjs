@@ -3,6 +3,7 @@
  * - TypeScriptビルドに依存せず、常に`electron`を正しく解決させるためのエントリ
  */
 const { app, BrowserWindow, session } = require('electron');
+const path = require('node:path');
 let bootstrap;
 try {
   bootstrap = require('../dist/src/server/bootstrap.js').bootstrap;
@@ -25,7 +26,13 @@ function createWindow() {
       sandbox: true,
     },
   });
-  win.loadURL(process.env.APP_START_URL || 'about:blank');
+  const startUrl = process.env.APP_START_URL;
+  if (startUrl) {
+    win.loadURL(startUrl);
+  } else {
+    const uiFile = path.resolve(__dirname, '../dist/ui/index.html');
+    win.loadFile(uiFile).catch(() => win.loadURL('about:blank'));
+  }
 }
 
 app.whenReady().then(() => {

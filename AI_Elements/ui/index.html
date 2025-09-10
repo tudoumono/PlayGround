@@ -1,0 +1,131 @@
+<!--
+  役割/責務: 最小のスタティックUI。Chat/Settings/Vector/Personas/Logsのタブを提供し、
+  まだ未配線のバックエンド（OpenAI/DB）に先立ってUXの骨組みを確認する。
+  外部影響: ネット/ファイルI/Oなし（localStorageのみ）。
+  関連: DESIGN.mdのUI構成に準拠（Elements相当の配置をシンプルに再現）。
+-->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Elements App (Preview UI)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">AI Elements App</div>
+      <nav class="tabs" id="tabs">
+        <button data-tab="chat" class="active">Chat</button>
+        <button data-tab="settings">Settings</button>
+        <button data-tab="vector">Vector</button>
+        <button data-tab="personas">Personas</button>
+        <button data-tab="logs">Logs</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Chat -->
+      <section id="tab-chat" class="tab active">
+        <div class="panel chat">
+          <aside class="left">
+            <h2>Conversations</h2>
+            <ul id="conversations"></ul>
+            <button id="new-conv">+ New Conversation</button>
+          </aside>
+          <section class="center">
+            <div id="message-list" class="messages"></div>
+            <div class="composer">
+              <select id="model">
+                <option>gpt-5</option>
+                <option>gpt-4o</option>
+                <option>gpt-4o-mini</option>
+              </select>
+              <input id="input" placeholder="メッセージを入力" />
+              <button id="send">Send</button>
+            </div>
+          </section>
+          <aside class="right">
+            <h2>Tools</h2>
+            <label><input type="checkbox" id="tool-web" checked /> web_search</label>
+            <label><input type="checkbox" id="tool-vector" checked /> file_search</label>
+            <label><input type="checkbox" id="tool-ci" /> code_interpreter</label>
+            <h2>Vector Layer</h2>
+            <select id="vector-layer">
+              <option value="MERGED">MERGED</option>
+              <option value="L3">L3 (session)</option>
+              <option value="L2">L2 (user)</option>
+              <option value="L1">L1 (predefined)</option>
+            </select>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="tab-settings" class="tab">
+        <div class="panel">
+          <h2>API / Proxy / Policy</h2>
+          <div class="grid">
+            <label>OpenAI API Key <input id="cfg-api-key" placeholder="sk-..." /></label>
+            <label><input type="checkbox" id="cfg-web-search" /> web_search enabled</label>
+            <label><input type="checkbox" id="cfg-vector" checked /> vector enabled</label>
+            <label><input type="checkbox" id="cfg-egress" /> EGRESS_STRICT</label>
+            <label>HTTP_PROXY <input id="cfg-http" placeholder="http://..." /></label>
+            <label>HTTPS_PROXY <input id="cfg-https" placeholder="http://..." /></label>
+            <label>NO_PROXY <input id="cfg-noproxy" placeholder="localhost,127.0.0.1" /></label>
+          </div>
+          <div class="row">
+            <button id="save-settings">Save</button>
+            <button id="test-key">Test API Key</button>
+            <span id="health" class="muted"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vector -->
+      <section id="tab-vector" class="tab">
+        <div class="panel">
+          <div class="row between">
+            <h2>Vector Stores</h2>
+            <div>
+              <select id="new-store-layer">
+                <option value="L2">L2</option>
+                <option value="L3">L3</option>
+              </select>
+              <input id="new-store-name" placeholder="Store name" />
+              <button id="create-store">Create</button>
+            </div>
+          </div>
+          <table id="stores" class="table"></table>
+        </div>
+      </section>
+
+      <!-- Personas -->
+      <section id="tab-personas" class="tab">
+        <div class="panel">
+          <div class="row between">
+            <h2>Personas</h2>
+            <div class="row">
+              <button id="export-personas">Export JSON</button>
+              <label class="import"><input type="file" id="import-personas" accept="application/json" />Import</label>
+            </div>
+          </div>
+          <ul id="persona-list" class="list"></ul>
+        </div>
+      </section>
+
+      <!-- Logs -->
+      <section id="tab-logs" class="tab">
+        <div class="panel">
+          <h2>Tool/Stream Logs</h2>
+          <pre id="logs" class="logs"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">Preview UI — not connected to backend yet</footer>
+
+    <script src="./app.js"></script>
+  </body>
+  </html>
+

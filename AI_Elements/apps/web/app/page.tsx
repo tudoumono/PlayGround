@@ -3,49 +3,36 @@
  * - Elements導入前の簡易UI
  */
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
+// AI Elements 版へ切替
+import { Chat, MessageList, Message, Composer } from "../components/elements.ai";
 
 export default function Page() {
   const [messages, setMessages] = useState<{ role: "user"|"assistant"; content: string }[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  function send() {
-    const text = (inputRef.current?.value || "").trim();
-    if (!text) return;
-    inputRef.current!.value = "";
+  const onSend = (text: string) => {
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
-    // 擬似ストリーム
     const reply = `Echo: ${text}`;
     let i = 0;
     const timer = setInterval(() => {
       setMessages((m) => {
         const last = m[m.length - 1];
         if (!last || last.role !== "assistant") return m;
-        const updated = m.slice(0, -1).concat({ ...last, content: last.content + (reply[i] || "") });
-        return updated;
+        return m.slice(0, -1).concat({ ...last, content: last.content + (reply[i] || "") });
       });
       i++;
       if (i >= reply.length) clearInterval(timer);
     }, 20);
-  }
+  };
 
   return (
-    <section className="panel">
-      <div className="messages">
+    <Chat>
+      <MessageList>
         {messages.map((m, idx) => (
-          <div key={idx} className={`message ${m.role}`}>{m.content}</div>
+          <Message key={idx} role={m.role}>{m.content}</Message>
         ))}
-      </div>
-      <div className="composer">
-        <select>
-          <option>gpt-5</option>
-          <option>gpt-4o</option>
-          <option>gpt-4o-mini</option>
-        </select>
-        <input ref={inputRef} placeholder="メッセージを入力" onKeyDown={(e) => e.key === 'Enter' && send()} />
-        <button onClick={send}>Send</button>
-      </div>
-    </section>
+      </MessageList>
+      <Composer onSend={onSend} />
+    </Chat>
   );
 }
-

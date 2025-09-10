@@ -1,5 +1,7 @@
 # python仮想環境
-.venv
+**/.venv/
+**/.python-version
+**/.uv-cache/
 # デフォルトのmain.py
 main.py
 

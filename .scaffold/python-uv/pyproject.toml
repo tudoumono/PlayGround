@@ -1,0 +1,25 @@
+[project]
+name = "__MODULE_NAME__"
+version = "0.1.0"
+description = "PlayGround module __MODULE_NAME__"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "ruff>=0.5.0", "black>=24.0"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"

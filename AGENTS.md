@@ -1,5 +1,9 @@
 # Repository Guidelines
 
+## Workspace Policy（重要）
+- 本リポジトリは「PlayGround」として複数フォルダの実験場です。各フォルダ配下は独立した開発単位とし、当該フォルダのAGENTS.mdのスコープに従います。
+- エージェント/コントリビューターは、現在の作業ディレクトリ配下のみを変更対象とし、他フォルダは参照のみ（読み取り専用）にしてください。跨フォルダ変更が必要な場合はPR/レビューで合意を得てから行います。
+
 ## Project Structure & Module Organization
 - `AutoSlideGen/` – Lambda handlers and helpers for PPTX generation; local/API test scripts in `AutoSlideGen/test/`.
 - `AutoSlideGen/lambda-layer/` – Dockerfilesとレイヤービルド用スクリプト、依存関係のインポート確認スクリプト。

@@ -18,24 +18,25 @@
     "rebuild:native": "npx --yes @electron/rebuild -f -w better-sqlite3"
   },
   "dependencies": {
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^12.2.0",
     "global-agent": "^3.0.0",
+    "next": "^14.2.32",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "undici": "^6.19.8",
     "uuid": "^9.0.1",
-    "zod": "^3.23.8",
-    "next": "^14.2.15",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "electron": "^31.3.1",
     "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.35.0",
     "eslint-plugin-jsdoc": "^48.11.0",
-    "tsc-alias": "^1.8.10",
     "prettier": "^3.3.3",
+    "tsc-alias": "^1.8.10",
     "typescript": "^5.5.4"
   },
   "build": {

@@ -4,8 +4,8 @@
  */
 "use client";
 import { useState } from "react";
-// AI Elements 版へ切替
-import { Chat, MessageList, Message, Composer } from "../components/elements.ai";
+// 一時的にローカルラッパー版を使用（@ai-sdk/uiが公開され次第差し替え）
+import { Chat, MessageList, Message, Composer } from "../components/elements";
 
 export default function Page() {
   const [messages, setMessages] = useState<{ role: "user"|"assistant"; content: string }[]>([]);

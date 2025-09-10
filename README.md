@@ -1,48 +1,43 @@
-# [スライド自動作成 📝](https://github.com/tudoumono/PlayGround/tree/main/%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%89%E8%87%AA%E5%8B%95%E4%BD%9C%E6%88%90)
-## メモ
-* **GASからPythonへの変換:**
-    参考にしたプロンプトの出力を、Google Apps Script (GAS) からPythonコードに変換しました。
-* **プロンプトの役割分担:**
-    プロンプトの設計を分析した結果、GASコード部分は固定のテンプレートとして機能し、生成AIにはスライドの内容を定義する `slide_data` というデータ部分のみを作成させていることが分かりました。
-* **API的な設計思想:**
-    この仕組みを応用し、`slide_data` を引数として渡す関数を事前にPythonで用意しました。これにより、外部からデータを与えるだけでスライドを生成できる、APIのような利用が可能になります。
+# PlayGround – 実験フィールド集約リポジトリ
 
----
+PlayGround は、複数の小規模プロジェクト（アプリ空間）を並行して保管・育成するためのリポジトリです。ルートの README は「各フォルダの索引と簡易説明」を提供します。詳細は各フォルダ直下の README を参照してください。
 
-## 参考資料
-* **記事:** [【神回】Googleスライドが一瞬で完成する"奇跡"のプロンプト教えます](https://note.com/majin_108/n/n39235bcacbfc)
+## フォルダ一覧（索引）
+- AutoSlideGen — スライド自動作成
+  - 概要: Googleスライド風の美しい PowerPoint（PPTX）を自動生成。Lambda/ローカル双方で動作。
+  - 主要サブフォルダ: `AutoSlideGen/lambda-layer`（AWS Lambda レイヤーのビルド資材）
+  - 詳細: AutoSlideGen/README.md
+  - 参考: [スライド自動作成 📝](https://github.com/tudoumono/PlayGround/tree/main/%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%89%E8%87%AA%E5%8B%95%E4%BD%9C%E6%88%90)
 
----
+- Excel — Excel比較／自動転記ツール群
+  - 概要: Excelブック全体比較、範囲比較（セルずれ耐性）、構造処理など。GUI（Tkinter）＋ Win32 COM を活用。
+  - 実行例: `uv run python Excel/excel_book_comparator.py`（Windows / Excel 必須）
+  - 設定: `Excel/.env.example` を `.env` にコピーして必要なら API キー等を設定
+  - 詳細: Excel/README.md
 
-## PlayGround リポジトリ方針（重要）
-このリポジトリは複数の小規模プロジェクト（アプリ空間）を並行して保管する「実験フィールド」です。
-
-- ルートの README は「各フォルダの索引と説明」を記載します。
-- 各フォルダは独立した開発単位とし、そのフォルダ直下に専用の README を必ず用意してください（概要・使い方・開発方法）。
-- 各フォルダは参照可ですが、変更は原則「現在作業しているフォルダ配下」に限定してください（跨フォルダ変更はPRで合意）。
+## リポジトリ運用ポリシー（重要）
+- 各フォルダは独立した開発単位です。フォルダ直下にそのシステムの README を必ず用意してください。
+- 変更は原則「現在作業しているフォルダ配下」に限定（他フォルダは参照のみ）。跨フォルダの変更は PR で合意の上で実施します。
 - Python 環境は各フォルダごとに分離（`uv` 管理の `.venv/` を利用）します。
 
-### 既存フォルダ（例）
-- `AutoSlideGen/` スライド自動生成関連。`lambda-layer` は `AutoSlideGen/lambda-layer/` に配置。
-
----
-
 ## 新しいアプリ空間の作成手順
-雛形スクリプトで、フォルダ単位の Python（uv）環境と最低限の構成を作成します。
+雛形スクリプトで、フォルダ単位の Python（uv）環境と最小構成を作成します。
 
 1. 生成: `bash scripts/scaffold_module.sh <フォルダ名>` 例: `bash scripts/scaffold_module.sh MyTool`
 2. 直下へ移動: `cd <フォルダ名>`
-3. 環境構築（uv いずれか）
-   - `uv venv && uv pip install -e .`
-   - または `uv sync`
-4. 実行/テスト
-   - 実行: `uv run python -m <フォルダ名>`
-   - テスト: `uv run pytest`（必要に応じて）
-5. ドキュメント整備
-   - `<フォルダ名>/README.md` を編集（概要・使い方・開発手順）
-   - `<フォルダ名>/AGENTS.md`（スコープ/規約）を調整
+3. 環境構築（uv いずれか）: `uv venv && uv pip install -e .` または `uv sync`
+4. 実行/テスト: `uv run python -m <フォルダ名>` / `uv run pytest`
+5. ドキュメント整備: `<フォルダ名>/README.md` と `<フォルダ名>/AGENTS.md` を編集
 6. コミット/プッシュ: `git add -A && git commit -m "feat(<フォルダ名>): scaffold" && git push`
 
 補足
 - 雛形は `.scaffold/python-uv/` にあり、`scripts/scaffold_module.sh` がコピーとプレースホルダ置換を行います。
 - 各フォルダの仮想環境は `.venv/` に作成され、リポジトリにはコミットされません。
+
+## AutoSlideGen メモ（背景）
+- GAS→Python への変換: 参照プロンプトの出力を GAS から Python へ移植。
+- プロンプト分離: コードはテンプレート化し、`slide_data` のみを生成AIが担当。
+- API的設計: `slide_data` を引数に渡す関数を用意し、外部からデータ投入で PPTX を生成可能。
+
+## 参考資料
+- 記事: [【神回】Googleスライドが一瞬で完成する"奇跡"のプロンプト教えます](https://note.com/majin_108/n/n39235bcacbfc)

@@ -3,8 +3,22 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
-  "include": ["./app/**/*", "./components/**/*", "./types/**/*"]
+  "include": [
+    "./app/**/*",
+    "./components/**/*",
+    "./types/**/*",
+    ".next/types/**/*.ts"
+  ]
 }
-

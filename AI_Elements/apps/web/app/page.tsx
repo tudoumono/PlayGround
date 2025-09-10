@@ -12,17 +12,27 @@ export default function Page() {
 
   const onSend = (text: string) => {
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
-    const reply = `Echo: ${text}`;
-    let i = 0;
-    const timer = setInterval(() => {
-      setMessages((m) => {
-        const last = m[m.length - 1];
-        if (!last || last.role !== "assistant") return m;
-        return m.slice(0, -1).concat({ ...last, content: last.content + (reply[i] || "") });
+    // /api/chat にPOSTし、toTextStreamResponse()の生テキストを逐次描画
+    void (async () => {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text }),
       });
-      i++;
-      if (i >= reply.length) clearInterval(timer);
-    }, 20);
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        setMessages((m) => {
+          const last = m[m.length - 1];
+          if (!last || last.role !== 'assistant') return m;
+          return m.slice(0, -1).concat({ ...last, content: last.content + chunk });
+        });
+      }
+    })();
   };
 
   return (

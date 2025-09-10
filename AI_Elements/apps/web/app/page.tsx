@@ -21,7 +21,7 @@ export default function Page() {
       });
       if (!res.body) return;
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder('utf-8');
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;

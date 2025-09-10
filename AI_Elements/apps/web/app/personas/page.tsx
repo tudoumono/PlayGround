@@ -22,11 +22,11 @@ export default function PersonasPage(){
   return (
     <section className="panel">
       <div className="row" style={{justifyContent:'space-between'}}>
-        <h2>Personas</h2>
+        <h2>ペルソナ</h2>
         <div className="row">
-          <button onClick={exportJson}>Export JSON</button>
-          <label><input type="file" accept="application/json" onChange={importJson}/> Import</label>
-        </div>
+          <button onClick={exportJson}>JSONエクスポート</button>
+          <label><input type="file" accept="application/json" onChange={importJson}/> インポート</label>
+      </div>
       </div>
       <ul style={{listStyle:'none', padding:0}}>
         {personas.map(p => (
@@ -38,4 +38,3 @@ export default function PersonasPage(){
     </section>
   );
 }
-

@@ -39,20 +39,19 @@ export default function SettingsPage() {
 
   return (
     <section className="panel">
-      <h2>API / Proxy / Policy</h2>
+      <h2>API / プロキシ / ポリシー</h2>
       <div className="grid">
-        <label>OpenAI API Key <input value={cfg.apiKey} onChange={(e)=>setCfg({...cfg, apiKey: e.target.value})} placeholder="sk-..."/></label>
-        <label><input type="checkbox" checked={cfg.web} onChange={(e)=>setCfg({...cfg, web: e.target.checked})}/> web_search enabled</label>
-        <label><input type="checkbox" checked={cfg.vector} onChange={(e)=>setCfg({...cfg, vector: e.target.checked})}/> vector enabled</label>
-        <label><input type="checkbox" checked={cfg.egress} onChange={(e)=>setCfg({...cfg, egress: e.target.checked})}/> EGRESS_STRICT</label>
+        <label>OpenAI APIキー <input value={cfg.apiKey} onChange={(e)=>setCfg({...cfg, apiKey: e.target.value})} placeholder="sk-..."/></label>
+        <label><input type="checkbox" checked={cfg.web} onChange={(e)=>setCfg({...cfg, web: e.target.checked})}/> web_search 有効</label>
+        <label><input type="checkbox" checked={cfg.vector} onChange={(e)=>setCfg({...cfg, vector: e.target.checked})}/> vector 有効</label>
+        <label><input type="checkbox" checked={cfg.egress} onChange={(e)=>setCfg({...cfg, egress: e.target.checked})}/> EGRESS_STRICT（外部送信をOpenAIのみに制限）</label>
         <label>HTTP_PROXY <input value={cfg.http} onChange={(e)=>setCfg({...cfg, http: e.target.value})} placeholder="http://..." /></label>
         <label>HTTPS_PROXY <input value={cfg.https} onChange={(e)=>setCfg({...cfg, https: e.target.value})} placeholder="http://..." /></label>
         <label>NO_PROXY <input value={cfg.noProxy} onChange={(e)=>setCfg({...cfg, noProxy: e.target.value})} placeholder="localhost,127.0.0.1" /></label>
       </div>
       <div className="row">
-        <button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+        <button onClick={save} disabled={saving}>{saving ? '保存中…' : '保存'}</button>
       </div>
     </section>
   );
 }
-

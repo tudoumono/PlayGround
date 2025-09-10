@@ -8,6 +8,7 @@
  */
 import { streamText, type UIMessage, convertToModelMessages } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { appendLog } from '@/apps/web/lib/logs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -21,17 +22,21 @@ export async function POST(req: Request): Promise<Response> {
   const body = await req.json().catch(() => ({} as any));
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    appendLog('error', 'chat', 'OPENAI_API_KEY が未設定です');
     return new Response('Missing OPENAI_API_KEY', { status: 500 });
   }
   const openai = createOpenAI({ apiKey });
 
   // messages優先、無ければpromptを単発実行
   const hasMessages = Array.isArray(body?.messages);
+  appendLog('info', 'chat', hasMessages ? 'messages でのチャット開始' : `prompt でのチャット開始: ${(body?.prompt ?? '').slice(0, 80)}`);
   const result = hasMessages
     ? streamText({ model: openai('gpt-4o'), messages: convertToModelMessages(body.messages as UIMessage[]) })
     : streamText({ model: openai('gpt-4o'), prompt: String(body?.prompt ?? '') });
 
   // 生テキストのストリーミング応答
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({
+    onError: (err) => appendLog('error', 'chat', `stream error: ${(err as Error).message}`),
+    onFinal: () => appendLog('info', 'chat', 'stream done'),
+  });
 }
-

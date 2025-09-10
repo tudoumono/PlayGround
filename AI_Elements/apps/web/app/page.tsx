@@ -5,11 +5,14 @@
 "use client";
 import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import { TextStreamChatTransport } from "ai";
 // 一時的にローカルラッパー版を使用（@ai-sdk/uiが公開され次第差し替え）
 import { Chat, MessageList, Message, Composer } from "../components/elements";
 
 export default function Page() {
-  const { messages, sendMessage, isLoading } = useChat({ api: '/api/chat' });
+  const { messages, sendMessage, isLoading } = useChat({
+    transport: new TextStreamChatTransport({ api: '/api/chat' }),
+  });
 
   const onSend = (text: string) => {
     void sendMessage({ text });

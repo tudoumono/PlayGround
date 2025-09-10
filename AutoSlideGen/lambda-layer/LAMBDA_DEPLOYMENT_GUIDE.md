@@ -74,7 +74,7 @@ Lambda関数のハンドラー設定と実際のファイル名が一致して�
 
 ### 現在のディレクトリ：
 ```
-lambda-layer/
+AutoSlideGen/lambda-layer/
 ├── lambda_function.py                        # 標準ファイル名版（新規作成）
 ├── lambda-deployment-package.zip            # Lambda関数用ZIP（10.54 KB）
 ├── lambda-layer-pptx-dependencies-uv.zip    # レイヤー用ZIP（13.34 MB）

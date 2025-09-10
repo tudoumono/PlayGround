@@ -16,7 +16,7 @@
 
 ## ファイル構成
 ```
-lambda-layer/
+AutoSlideGen/lambda-layer/
 ├── python/                          # Lambda Layer用ディレクトリ
 │   ├── pptx/                       # python-pptxライブラリ
 │   ├── lxml/                       # lxmlライブラリ（修正済み）

@@ -2,16 +2,16 @@
 
 ## Project Structure & Module Organization
 - `AutoSlideGen/` – Lambda handlers and helpers for PPTX generation; local/API test scripts in `AutoSlideGen/test/`.
-- `lambda-layer/` – Dockerfiles and scripts to build the AWS Lambda layer; import smoke test.
+- `AutoSlideGen/lambda-layer/` – Dockerfilesとレイヤービルド用スクリプト、依存関係のインポート確認スクリプト。
 - Root docs – `README.md`, deployment guides, and this file.
 
 ## Build, Test, and Development Commands
 - Local generator test: `python AutoSlideGen/test/test_local.py` (creates a PPTX locally).
 - Local URL flow test: `python AutoSlideGen/test/test_get_url_local.py`.
 - API smoke test: `API_GENERATE_ENDPOINT_URL=... API_GET_URL_ENDPOINT_URL=... python AutoSlideGen/test/test_api_simple.py`.
-- Build Lambda layer (generic): `cd lambda-layer && bash build-layer.sh`.
-- Build Lambda layer (exact runtime): `cd lambda-layer && bash build-exact-layer.sh`.
-- Layer import check: `python lambda-layer/test_lambda_imports.py`.
+- Build Lambda layer (generic): `cd AutoSlideGen/lambda-layer && bash build-layer.sh`.
+- Build Lambda layer (exact runtime): `cd AutoSlideGen/lambda-layer && bash build-exact-layer.sh`.
+- Layer import check: `python AutoSlideGen/lambda-layer/test_lambda_imports.py`.
 
 ## Coding Style & Naming Conventions
 - Python ≥ 3.13. Use 4‑space indentation and PEP 8.

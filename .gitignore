@@ -4,12 +4,12 @@
 main.py
 
 AutoSlideGen/python
-lambda-layer/python-optimized
-lambda-layer/python
-lambda-layer/python-exact
+AutoSlideGen/lambda-layer/python-optimized
+AutoSlideGen/lambda-layer/python
+AutoSlideGen/lambda-layer/python-exact
 
 # 生成物（レイヤーZIP・成果物）
-lambda-layer/*.zip
+AutoSlideGen/lambda-layer/*.zip
 *.pptx
 
 # 秘匿情報（例外: *.example / *.sample は許可）

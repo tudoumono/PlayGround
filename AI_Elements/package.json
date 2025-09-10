@@ -10,6 +10,10 @@
     "build": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\" && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "postbuild": "node scripts/copy-ui.js",
     "start:electron": "npm run build && electron --no-sandbox .",
+    "dev:web": "next dev apps/web -p 3000",
+    "build:web": "next build apps/web",
+    "start:web": "next start apps/web -p 3000",
+    "dev:electron": "node scripts/dev-electron.js",
     "dist": "npm run build && electron-builder",
     "rebuild:native": "npx --yes @electron/rebuild -f -w better-sqlite3"
   },
@@ -18,7 +22,10 @@
     "global-agent": "^3.0.0",
     "undici": "^6.19.8",
     "uuid": "^9.0.1",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.43.0",

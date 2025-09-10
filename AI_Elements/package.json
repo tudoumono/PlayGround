@@ -38,6 +38,10 @@
     "electron-rebuild": "^3.2.9",
     "eslint": "^9.35.0",
     "eslint-plugin-jsdoc": "^48.11.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "postcss": "^8.4.47",
+    "autoprefixer": "^10.4.20",
     "prettier": "^3.3.3",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.5.4"

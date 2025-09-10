@@ -38,6 +38,9 @@ PlayGround は、複数の小規模プロジェクト（アプリ空間）を並
 - GAS→Python への変換: 参照プロンプトの出力を GAS から Python へ移植。
 - プロンプト分離: コードはテンプレート化し、`slide_data` のみを生成AIが担当。
 - API的設計: `slide_data` を引数に渡す関数を用意し、外部からデータ投入で PPTX を生成可能。
+  
+参考資料
+- 記事: [【神回】Googleスライドが一瞬で完成する"奇跡"のプロンプト教えます](https://note.com/majin_108/n/n39235bcacbfc)
 
 ## Excel メモ（背景）
 - 目的: 昨年度⇔今年度のブックを比較し、質問に対する回答を自動転記。セルずれや範囲差を考慮した比較パターンを用意。
@@ -46,6 +49,3 @@ PlayGround は、複数の小規模プロジェクト（アプリ空間）を並
 - エントリポイント例: `excel_book_comparator.py`（意味的マッチング）、`smart_range_comparator.py`（範囲比較）ほか。
 - AI補助（任意）: `.env` または `config.json` の API キー設定がある場合に OpenAI を利用して不足回答を生成。
 - ログ: `logs/` に実行ログ/統計を保存（存在しない場合は作成）。詳細は Excel/README.md を参照。
-
-## 参考資料
-- 記事: [【神回】Googleスライドが一瞬で完成する"奇跡"のプロンプト教えます](https://note.com/majin_108/n/n39235bcacbfc)

@@ -1,0 +1,56 @@
+# Node/Electron
+node_modules/
+dist/
+release/
+out/
+build/
+.parcel-cache/
+
+# Next.js / Future UI
+.next/
+.turbo/
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Env & local config
+.env
+.env.*
+!.env.sample
+*.local
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Tests/coverage (if added later)
+coverage/
+playwright-report/
+test-results/
+
+# Generated artifacts
+*.pptx
+*.zip
+*.tmp
+
+# SQLite / local data caches
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/**/*.db
+data/**/*.sqlite*
+data/tmp/
+
+# Electron builder outputs
+*.dmg
+*.exe
+*.AppImage
+*.snap
+installer/**

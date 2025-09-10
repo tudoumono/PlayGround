@@ -1,0 +1,58 @@
+{
+  "name": "ai_elements",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Elements TypeScript workspace (skeleton)",
+  "main": "app-electron/main.cjs",
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier -w .",
+    "build": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\" && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "start:electron": "npm run build && electron --no-sandbox .",
+    "dist": "npm run build && electron-builder",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "global-agent": "^3.0.0",
+    "undici": "^6.19.8",
+    "uuid": "^9.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "eslint": "^9.35.0",
+    "eslint-plugin-jsdoc": "^48.11.0",
+    "tsc-alias": "^1.8.10",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4",
+    "electron-rebuild": "^3.6.1"
+  },
+  "build": {
+    "appId": "dev.ai-elements.app",
+    "productName": "AI Elements App",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "!**/.env*"
+    ],
+    "extraResources": [
+      {
+        "from": ".env.sample",
+        "to": ".env.sample"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

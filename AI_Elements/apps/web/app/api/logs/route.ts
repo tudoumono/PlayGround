@@ -4,7 +4,7 @@
  * - POST: ログ追加 { level, tag, message }
  * - DELETE: クリア
  */
-import { appendLog, clearLogs, getLogs, type LogLevel } from '@/apps/web/lib/logs';
+import { appendLog, clearLogs, getLogs, type LogLevel, getLogFileInfo, deleteLogFile } from '@/apps/web/lib/logs';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +12,8 @@ export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const limit = Number(url.searchParams.get('limit') ?? '200');
   const data = getLogs(Number.isFinite(limit) ? limit : 200);
-  return Response.json({ logs: data });
+  const file = getLogFileInfo();
+  return Response.json({ logs: data, file });
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -24,6 +25,6 @@ export async function POST(req: Request): Promise<Response> {
 
 export async function DELETE(): Promise<Response> {
   clearLogs();
+  deleteLogFile();
   return new Response(null, { status: 204 });
 }
-
